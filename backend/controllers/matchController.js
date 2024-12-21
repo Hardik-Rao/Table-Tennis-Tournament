@@ -3,154 +3,96 @@ const { pool } = require('../config/db');
 // Function to get all matches
 const getAllMatches = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM matches ORDER BY match_date DESC');
+    const result = await pool.query('SELECT * FROM match ORDER BY match_date DESC');
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ error: 'Failed to fetch matches' });
   }
 };
-
 // Function to get a match by ID
-const getMatchById = async (req, res) => {
-  const { id } = req.params; // Extract match ID from the URL
-  try {
-    const result = await pool.query('SELECT * FROM matches WHERE match_id = $1', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Match not found' });
-    }
-    res.status(200).json(result.rows[0]); // Return match data by ID
-  } catch (error) {
-    console.error('Error fetching match:', error);
-    res.status(500).json({ error: 'Failed to fetch match' });
-  }
-};
-
-// Function to create a match if eligible
-const createMatchIfEligible = async () => {
-  try {
-    // Step 1: Get all teams with at least 3 players
-    const teamsResult = await pool.query(`
-      SELECT team, COUNT(*) as player_count
-      FROM players
-      GROUP BY team
-      HAVING COUNT(*) >= 3
-    `);
-
-    if (teamsResult.rows.length < 2) {
-      console.log("Not enough teams with enough players to create a match.");
-      return;
-    }
-
-    // Step 2: Select two teams with at least 3 players each
-    const team1 = teamsResult.rows[0].team;
-    const team2 = teamsResult.rows[1].team;
-
-    // Step 3: Select 3 players randomly from each team
-    const team1PlayersResult = await pool.query(`
-      SELECT * FROM players WHERE team = $1 ORDER BY RANDOM() LIMIT 3
-    `, [team1]);
-
-    const team2PlayersResult = await pool.query(`
-      SELECT * FROM players WHERE team = $1 ORDER BY RANDOM() LIMIT 3
-    `, [team2]);
-
-    if (team1PlayersResult.rows.length < 3 || team2PlayersResult.rows.length < 3) {
-      console.log("One of the teams does not have enough players to create a match.");
-      return;
-    }
-
-    // Step 4: Create a new match entry in the matches table
-    const matchDate = new Date(); // Use the current date and time as match date
-    const matchResult = await pool.query(`
-      INSERT INTO matches (team1_name, team2_name, team1_score, team2_score, match_date, status)
-      VALUES ($1, $2, 0, 0, $3, 'scheduled') RETURNING match_id
-    `, [team1, team2, matchDate]);
-
-    const matchId = matchResult.rows[0].match_id;
-
-    console.log(`Match created successfully between ${team1} and ${team2} with match ID: ${matchId}`);
-  } catch (error) {
-    console.error('Error creating match:', error);
-  }
-};
-
+// Function to create a match for an open tournament
 // Function to add a new match
-const addMatch = async (req, res) => {
-  const { team1_id, team2_id, match_date, venue, team1_score = 0, team2_score = 0 } = req.body;
-
-  if (!team1_id || !team2_id || !match_date || !venue) {
-    return res.status(400).json({ error: 'Team IDs, match date, and venue are required' });
-  }
-
+const generateMatches = async (req, res) => {
   try {
-    const result = await pool.query(
-      'INSERT INTO matches (team1_id, team2_id, match_date, venue, team1_score, team2_score) VALUES ($1, $2, $3, $4, $5, $6) RETURNING match_id',
-      [team1_id, team2_id, match_date, venue, team1_score, team2_score]
-    );
+    // Fetch all players from the players table
+    const playersResult = await pool.query('SELECT name FROM players');
+    const players = playersResult.rows.map((row) => row.name);
 
-    res.status(201).json({
-      message: 'Match added successfully',
-      match_id: result.rows[0].match_id,
-    });
+    if (players.length === 0) {
+      return res.status(400).json({ error: 'No players available to create matches' });
+    }
+
+    // Shuffle players randomly
+    for (let i = players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [players[i], players[j]] = [players[j], players[i]];
+    }
+
+    // Prepare matches
+    const matches = [];
+    const defaultDate = '2004-12-25';
+    const defaultVenue = 'ABC Stadium';
+    const defaultStatus = 'Soon';
+
+    while (players.length > 1) {
+      const player1 = players.pop();
+      const player2 = players.pop();
+      matches.push({
+        player1_name: player1,
+        player2_name: player2,
+        player1_score: 0,
+        player2_score: 0,
+        match_date: defaultDate,
+        venue: defaultVenue,
+        status: defaultStatus,
+      });
+    }
+
+    // If there's an odd player, give them a bye
+    if (players.length === 1) {
+      matches.push({
+        player1_name: players.pop(),
+        player2_name: 'Bye',
+        player1_score: 0,
+        player2_score: 0,
+        match_date: defaultDate,
+        venue: defaultVenue,
+        status: defaultStatus,
+      });
+    }
+
+    // Insert matches into the match table
+    const insertQuery = `
+      INSERT INTO match (player1_name, player2_name, player1_score, player2_score, match_date, venue, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `;
+
+    for (const match of matches) {
+      await pool.query(insertQuery, [
+        match.player1_name,
+        match.player2_name,
+        match.player1_score,
+        match.player2_score,
+        match.match_date,
+        match.venue,
+        match.status,
+      ]);
+    }
+
+    res.status(201).json({ message: 'Matches generated successfully', matches });
   } catch (error) {
-    console.error('Error adding match:', error);
-    res.status(500).json({ error: 'Failed to add match' });
+    console.error('Error generating matches:', error);
+    res.status(500).json({ error: 'Failed to generate matches' });
   }
 };
-
 // Function to update a match's details
-const updateMatch = async (req, res) => {
-  const { id } = req.params;
-  const { team1_name, team2_name, team1_score, team2_score, match_date, venue } = req.body;
-
-  if (!team1_name || !team2_name || !team1_score || !team2_score || !match_date || !venue) {
-    return res.status(400).json({ error: 'Team names, scores, match date, and venue are required' });
-  }
-
-  try {
-    const result = await pool.query(
-      'UPDATE matches SET team1_name = $1, team2_name = $2, team1_score = $3, team2_score = $4, match_date = $5, venue = $6 WHERE match_id = $7 RETURNING *',
-      [team1_name, team2_name, team1_score, team2_score, match_date, venue, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Match not found' });
-    }
-
-    res.status(200).json({
-      message: 'Match updated successfully',
-      match: result.rows[0],
-    });
-  } catch (error) {
-    console.error('Error updating match:', error);
-    res.status(500).json({ error: 'Failed to update match' });
-  }
-};
-
 // Function to delete a match
-const deleteMatch = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query('DELETE FROM matches WHERE match_id = $1 RETURNING *', [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Match not found' });
-    }
-
-    res.status(200).json({ message: 'Match deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting match:', error);
-    res.status(500).json({ error: 'Failed to delete match' });
-  }
-};
-
 module.exports = { 
   getAllMatches, 
-  getMatchById, 
-  addMatch, 
-  updateMatch, 
-  deleteMatch, 
-  createMatchIfEligible 
+ // getMatchById, 
+  generateMatches, 
+  //updateMatch, 
+ // deleteMatch, 
+ 
 };

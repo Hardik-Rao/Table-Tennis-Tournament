@@ -1,9 +1,14 @@
 const { pool } = require('../config/db');
+const fs = require('fs');
 
 // Function to add a new player
 const addPlayer = async (req, res) => {
   const { name, institute, age, rank = 0, points = 0 } = req.body;
-  const img = req.file ? req.file.path : null; // Access uploaded file's path
+  let img = null;
+
+  if (req.file) {
+    img = fs.readFileSync(req.file.path); // Read the file as binary data
+  }
 
   if (!name || !age) {
     return res.status(400).json({ error: 'Name and age are required.' });
@@ -29,7 +34,13 @@ const addPlayer = async (req, res) => {
 const getAllPlayers = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM players');
-    res.status(200).json(result.rows);
+
+    const players = result.rows.map((player) => ({
+      ...player,
+      img: player.img ? `data:image/jpeg;base64,${player.img.toString('base64')}` : null,
+    }));
+
+    res.status(200).json(players);
   } catch (error) {
     console.error('Error retrieving players:', error);
     res.status(500).json({ error: 'Failed to retrieve players' });
@@ -46,10 +57,15 @@ const getPlayerById = async (req, res) => {
 
   try {
     const result = await pool.query('SELECT * FROM players WHERE player_id = $1', [id]);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Player not found' });
     }
-    res.status(200).json(result.rows[0]);
+
+    const player = result.rows[0];
+    player.img = player.img ? `data:image/jpeg;base64,${player.img.toString('base64')}` : null;
+
+    res.status(200).json(player);
   } catch (error) {
     console.error('Error retrieving player:', error);
     res.status(500).json({ error: 'Failed to retrieve player' });
@@ -60,7 +76,11 @@ const getPlayerById = async (req, res) => {
 const updatePlayer = async (req, res) => {
   const { player_id } = req.params;
   const { name, institute, age, rank, points } = req.body;
-  const img = req.file ? req.file.path : null; // Handle uploaded image
+  let img = null;
+
+  if (req.file) {
+    img = fs.readFileSync(req.file.path); // Read the new image as binary
+  }
 
   if (!player_id) {
     return res.status(400).json({ error: 'Player ID is required.' });

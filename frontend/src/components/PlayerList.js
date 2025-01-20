@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PlayerCard from './PlayerCard';
 import '../style/PlayerList.css';
-
 const PlayerList = () => {
   const [players, setPlayers] = useState([]);
   const [error, setError] = useState('');

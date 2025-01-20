@@ -1,64 +1,10 @@
-/* src/styles/Header.css */
-header {
-    background-color: #333;
-    color: white;
-    padding: 10px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .tournament-heading {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin: 20px 0; /* Adds space above and below the heading */
-    text-align: center;
-    color: white;
-  }
-  
-  .header-bottom {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    align-items: center;
-  }
-  
-  .left-buttons {
-    display: flex;
-    gap: 15px;  /* Space between the buttons */
-  }
-  
-  .nav-button {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    margin: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    border-radius: 5px;
-  }
-  
-  .nav-button:hover {
-    background: #555;
-  }
-  
-  .right-button {
-    display: flex;
-    justify-content: flex-end;
-  }
-  
-  .login-button {
-    background: #4CAF50;
-    color: white;
-    border: none;
-    padding: 12px 30px;  /* Slightly larger size */
-    font-size: 1.2rem;  /* Slightly larger font size */
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .login-button:hover {
-    background: #45a049;
-  }
-  
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f9;
+  display: flex;
+  justify-content:end;
+  align-items: end;
+  height: 100vh;
+}

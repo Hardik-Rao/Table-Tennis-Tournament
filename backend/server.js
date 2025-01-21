@@ -15,14 +15,14 @@ const matchRoutes = require('./routes/matchRoutes'); // Routes for matches
 const playerRoutes = require('./routes/playerRoutes'); // Routes for players
 const rankingRoutes = require('./routes/rankingRoutes'); // Routes for rankings
 const liveScoreRoutes = require('./routes/liveScoreRoutes'); // Routes for live scores
-const userRoutes = require('./routes/userRoutes'); // Routes for user-related actions (e.g., login, register)
+const registrationAdminRoutes = require('./routes/registrationAdminRoutes'); // Routes for user-related actions (e.g., login, register)
 
 // Register routes
 app.use('/api/matches', matchRoutes); // Match-related endpoints
 app.use('/api/players', playerRoutes); // Player-related endpoints
 app.use('/api/rankings', rankingRoutes); // Ranking-related endpoints
 app.use('/api/live-scores', liveScoreRoutes); // Live score endpoints
-app.use('/api/users', userRoutes); // User-related endpoints (e.g., /register, /login)
+app.use('/api/admins', registrationAdminRoutes); // User-related endpoints (e.g., /register, /login)
 
 // Basic server endpoint to test if the server is running
 app.get('/', (req, res) => {

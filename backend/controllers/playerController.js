@@ -54,6 +54,32 @@ const getAllPlayers = async (req, res) => {
 // Optional: Function to update a player's details (if needed)
 
 // Optional: Function to delete a player (if needed)
+const deletePlayer = async (req, res) => {
+  const { name } = req.params;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Player name is required.' });
+  }
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM players WHERE name = $1 RETURNING name',
+      [name]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Player not found.' });
+    }
+
+    res.status(200).json({ message: `Player "${name}" deleted successfully.` });
+  } catch (error) {
+    console.error('Error deleting player:', error);
+    res.status(500).json({ error: 'Failed to delete player.' });
+  }
+};
+
+
+
 
 
 module.exports = {
@@ -61,5 +87,5 @@ module.exports = {
   getAllPlayers,
  // getPlayerById,
  // updatePlayer,
- // deletePlayer,
+  deletePlayer,
 };

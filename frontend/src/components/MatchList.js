@@ -1,6 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import MatchCard from './MatchCard';
-import '../style/MatchList.css';
+import styled from 'styled-components';
+
+const MatchListContainer = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+`;
+
+const Heading = styled.h2`
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #2c3e50;
+`;
+
+const MatchCardContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const InfoMessage = styled.p`
+  text-align: center;
+  color: #7f8c8d;
+`;
+
+const AddButton = styled.button`
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
 
 const MatchList = () => {
   const [matches, setMatches] = useState([]);
@@ -48,19 +89,19 @@ const MatchList = () => {
   }, []);
 
   return (
-    <div className="match-list">
-      <h2>Upcoming Matches</h2>
+    <MatchListContainer>
+      <Heading>Upcoming Matches</Heading>
       {matches.length === 0 ? (
-        <p>No matches found. Please try again later.</p>
+        <InfoMessage>No matches found. Please try again later.</InfoMessage>
       ) : (
-        <div className="match-card-container">
+        <MatchCardContainer>
           {matches.map((match) => (
             <MatchCard key={match.match_id} match={match} />
           ))}
-        </div>
+        </MatchCardContainer>
       )}
-      <button onClick={generateMatches}>Add Matches of New Arrivals</button>
-    </div>
+      <AddButton onClick={generateMatches}>Add Matches of New Arrivals</AddButton>
+    </MatchListContainer>
   );
 };
 

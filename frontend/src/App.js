@@ -8,13 +8,16 @@ import MatchList from './components/MatchList';
 import LiveScores from './components/LiveScores';
 import Rankings from './components/Rankings';
 import Add from './components/Add';
+import MainPage from './components/MainPage';
 const App = () => {
   const [isRegistered, setIsRegistered] = useState(false);
 
   return (
     <div>
       <Routes>
-        <Route path="/" element={<RegistrationForm setIsRegistered={setIsRegistered} />} />
+      <Route path="/" element={<MainPage />} />
+
+        <Route path="/registeradmin" element={<RegistrationForm setIsRegistered={setIsRegistered} />} />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/home" element={<Header />} />
         <Route path="/players" element={<PlayerList />} />

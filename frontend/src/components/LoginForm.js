@@ -80,18 +80,27 @@ const LoginForm = () => {
   const handleLogin = async (event) => {
     event.preventDefault();
 
-    const response = await fetch('http://localhost:5000/api/users/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const response = await fetch('http://localhost:5000/api/admins/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const data = await response.json();
-    if (response.ok) {
-      alert('Login successful!');
-      navigate('/home');
-    } else {
-      setErrorMessage(data.message);
+      const data = await response.json();
+      if (response.ok) {
+        if (data.role === 'admin') {
+          alert('Login successful!');
+          navigate('/home');
+        } else {
+          setErrorMessage('Access denied: User is not an admin');
+        }
+      } else {
+        setErrorMessage(data.message);
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      setErrorMessage('An error occurred. Please try again.');
     }
   };
 

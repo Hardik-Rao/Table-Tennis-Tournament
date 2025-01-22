@@ -33,24 +33,9 @@ const InputField = styled.input`
   box-sizing: border-box;
   background-color: #ecf0f1; /* Light grayish-blue */
   color: #34495e;
-  
+
   &:focus {
     border-color: #2980b9; /* Bluish border on focus */
-    outline: none;
-  }
-`;
-
-const SelectField = styled.select`
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 20px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: #ecf0f1;
-  color: #34495e;
-
-  &:focus {
-    border-color: #2980b9;
     outline: none;
   }
 `;
@@ -88,7 +73,6 @@ const AlreadyRegisteredText = styled.p`
 const RegistrationForm = ({ setIsRegistered }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('player');
   const [adminKey, setAdminKey] = useState('');
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -99,41 +83,36 @@ const RegistrationForm = ({ setIsRegistered }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (role === 'admin' && !adminKey) {
-      setErrorMessage('Admin key is required for admin registration');
-      return;
-    }
-
-    const userDetails = {
+    const adminDetails = {
       username,
       password,
       email,
-      role,
-      adminKey: role === 'admin' ? adminKey : null,
+      adminKey,
+      role: 'admin',
     };
 
     try {
       const checkResponse = await fetch(
-        `http://localhost:5000/api/users/check?email=${email}`,
+        `http://localhost:5000/api/admins/check?email=${email}`,
         { method: 'GET' }
       );
       const checkData = await checkResponse.json();
 
       if (checkResponse.ok && checkData.isRegistered) {
-        setErrorMessage('User is already registered. Redirecting to login...');
+        setErrorMessage('Admin is already registered. Redirecting to login...');
         setTimeout(() => setIsRegisteredState(true), 3000);
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/users/register', {
+      const response = await fetch('http://localhost:5000/api/admins/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userDetails),
+        body: JSON.stringify(adminDetails),
       });
 
       const data = await response.json();
       if (response.ok) {
-        setSuccessMessage('Registration successful! Redirecting to home...');
+        setSuccessMessage('Registration successful! Redirecting to login...');
         setIsRegistered(true);
         setTimeout(() => navigate('/home'), 3000);
       } else {
@@ -154,7 +133,7 @@ const RegistrationForm = ({ setIsRegistered }) => {
 
   return (
     <FormWrapper>
-      <FormTitle>Register</FormTitle>
+      <FormTitle>Admin Registration</FormTitle>
 
       <form onSubmit={handleSubmit}>
         <InputLabel>Username:</InputLabel>
@@ -181,23 +160,13 @@ const RegistrationForm = ({ setIsRegistered }) => {
           required
         />
 
-        <InputLabel>Select Role:</InputLabel>
-        <SelectField value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="player">Player</option>
-          <option value="admin">Admin</option>
-        </SelectField>
-
-        {role === 'admin' && (
-          <>
-            <InputLabel>Admin Key:</InputLabel>
-            <InputField
-              type="password"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              required
-            />
-          </>
-        )}
+        <InputLabel>Admin Key:</InputLabel>
+        <InputField
+          type="password"
+          value={adminKey}
+          onChange={(e) => setAdminKey(e.target.value)}
+          required
+        />
 
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}

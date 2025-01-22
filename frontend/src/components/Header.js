@@ -76,7 +76,7 @@ const Header = () => {
           </LeftButtons>
           <RightButton>
             <NavButton>
-              <Link to="/add">Register in tournament!</Link>
+              <Link to="/add">Register a Player!</Link>
             </NavButton>
           </RightButton>
         </HeaderBottom>

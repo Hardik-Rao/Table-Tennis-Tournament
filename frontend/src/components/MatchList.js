@@ -1,69 +1,108 @@
-// src/components/MatchList.js
 import React, { useState, useEffect } from 'react';
 import MatchCard from './MatchCard';
-import '../style/MatchList.css';
+import styled from 'styled-components';
+
+const MatchListContainer = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+`;
+
+const Heading = styled.h2`
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #2c3e50;
+`;
+
+const MatchCardContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const InfoMessage = styled.p`
+  text-align: center;
+  color: #7f8c8d;
+`;
+
+const AddButton = styled.button`
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
 
 const MatchList = () => {
-    const [matches, setMatches] = useState([]);
-    const [loading, setLoading] = useState(false);
+  const [matches, setMatches] = useState([]);
 
-    const fetchMatches = async () => {
-        try {
-            const response = await fetch('/api/matches');
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const data = await response.json();
-            setMatches(data);
-        } catch (error) {
-            console.error('Error fetching matches:', error);
+  const fetchMatches = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/matches');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      const sortedMatches = data.sort(
+        (a, b) => new Date(a.match_date) - new Date(b.match_date)
+      );
+      setMatches(sortedMatches);
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+    }
+  };
+
+  const generateMatches = async () => {
+    try {
+      const response = await fetch(
+        'http://localhost:5000/api/matches/generate',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-    };
+      );
 
-    const handleMatchButtonClick = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/trigger-match', {
-                method: 'POST',
-            });
-            const result = await response.json();
-            if (response.ok) {
-                alert(result.message || 'Matches generated successfully!');
-                await fetchMatches(); // Refresh the match list after creation
-            } else {
-                alert(result.error || 'Failed to create matches.');
-            }
-        } catch (error) {
-            console.error('Error triggering match:', error);
-            alert('An error occurred while generating matches.');
-        } finally {
-            setLoading(false);
-        }
-    };
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
 
-    useEffect(() => {
-        fetchMatches();
-    }, []);
+      fetchMatches();
+    } catch (error) {
+      console.error('Error generating matches:', error);
+    }
+  };
 
-    return (
-        <div className="match-list">
-            <h2>Upcoming Matches</h2>
-            <button 
-                onClick={handleMatchButtonClick} 
-                disabled={loading} 
-                className="trigger-match-button"
-            >
-                {loading ? 'Generating...' : 'Match'}
-            </button>
-            {matches.length === 0 ? (
-                <p>No matches found or insufficient teams registered. Please try again later.</p>
-            ) : (
-                matches.map((match) => (
-                    <MatchCard key={match.match_id} match={match} />
-                ))
-            )}
-        </div>
-    );
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  return (
+    <MatchListContainer>
+      <Heading>Upcoming Matches</Heading>
+      {matches.length === 0 ? (
+        <InfoMessage>No matches found. Please try again later.</InfoMessage>
+      ) : (
+        <MatchCardContainer>
+          {matches.map((match) => (
+            <MatchCard key={match.match_id} match={match} />
+          ))}
+        </MatchCardContainer>
+      )}
+      <AddButton onClick={generateMatches}>Add Matches of New Arrivals</AddButton>
+    </MatchListContainer>
+  );
 };
 
 export default MatchList;

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 const RegisterPage = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 70vh; /* Reduced height for a shorter appearance */
-  
+  min-height: 70vh;
 `;
 
 const RegisterFormContainer = styled.form`
@@ -15,7 +15,7 @@ const RegisterFormContainer = styled.form`
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 480px; /* Keep the width wide */
+  max-width: 480px;
   box-sizing: border-box;
 `;
 
@@ -25,7 +25,7 @@ const FormGroup = styled.div`
 
 const Label = styled.label`
   display: block;
-  font-size: 14px; /* Reduced font size */
+  font-size: 14px;
   font-weight: bold;
   margin-bottom: 5px;
   color: #555;
@@ -33,11 +33,11 @@ const Label = styled.label`
 
 const Input = styled.input`
   width: 100%;
-  padding: 8px; /* Reduced padding to decrease height */
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #ecf0f1;
-  font-size: 14px; /* Reduced font size */
+  font-size: 14px;
   color: #34495e;
   box-sizing: border-box;
 
@@ -51,14 +51,14 @@ const ErrorMessage = styled.p`
   color: #e74c3c;
   font-weight: bold;
   text-align: center;
-  font-size: 14px; /* Reduced font size */
+  font-size: 14px;
 `;
 
 const SuccessMessage = styled.p`
   color: #5cb85c;
   font-weight: bold;
   text-align: center;
-  font-size: 14px; /* Reduced font size */
+  font-size: 14px;
 `;
 
 const SubmitButton = styled.button`
@@ -71,7 +71,7 @@ const SubmitButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  font-size: 14px; /* Reduced font size */
+  font-size: 14px;
   box-sizing: border-box;
 
   &:hover {
@@ -89,6 +89,8 @@ const Add = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const navigate = useNavigate(); // Hook to navigate between routes
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,6 +115,7 @@ const Add = () => {
       if (result.message === 'Player added successfully') {
         setSuccess('Player registered successfully!');
         setError('');
+        navigate('/home'); // Redirect to /home after successful registration
       } else {
         setError('Registration failed. Please try again.');
         setSuccess('');

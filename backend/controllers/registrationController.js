@@ -54,6 +54,7 @@ const registerUser = async (req, res) => {
 };
 
 // Function to handle user login
+// Function to handle user login
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
 
@@ -72,17 +73,18 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
-    // Check if the user has the role of 'admin'
-    if (user.rows[0].role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied: User is not an admin' });
-    }
-
-    res.status(200).json({ message: 'Login successful', role: user.rows[0].role });
+    // If login is successful, send a response with the /home route
+    res.status(200).json({
+     
+      role: user.rows[0].role,
+      redirectUrl: '/home' // Send the URL to redirect to
+    });
   } catch (error) {
     console.error('Error logging in user:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 module.exports = { checkUser, registerUser, loginUser };

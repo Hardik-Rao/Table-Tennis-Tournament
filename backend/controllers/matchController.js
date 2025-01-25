@@ -33,106 +33,163 @@ const determineMatchStatus = (matchDateTime) => {
       return 'soon';
   }
 };
-// Function to add a new match
 const generateMatches = async (req, res) => {
-  try {
-      // Fetch all players from the players table
-      const allPlayersResult = await pool.query('SELECT name FROM players');
-      const allPlayers = allPlayersResult.rows.map((row) => row.name);
+    try {
+        // Fetch all players from the players table
+        const allPlayersResult = await pool.query('SELECT name FROM players');
+        const allPlayers = allPlayersResult.rows.map((row) => row.name);
 
-      // Fetch players already in matches
-      const matchedPlayersResult = await pool.query(`
-          SELECT DISTINCT player1_name AS name FROM match
-          UNION
-          SELECT DISTINCT player2_name AS name FROM match
-      `);
-      const matchedPlayers = matchedPlayersResult.rows.map((row) => row.name);
+        // Fetch unmatched player (if any)
+        const unmatchedPlayerResult = await pool.query(`
+            SELECT player1_name 
+            FROM match 
+            WHERE player2_name = 'no opponent registered yet'
+            LIMIT 1
+        `);
+        const unmatchedPlayer =
+            unmatchedPlayerResult.rows.length > 0
+                ? unmatchedPlayerResult.rows[0].player1_name
+                : null;
 
-      // Filter out players who already have matches
-      const newPlayers = allPlayers.filter(player => !matchedPlayers.includes(player));
+        // Filter new players who are not already matched
+        const matchedPlayersResult = await pool.query(`
+            SELECT DISTINCT player1_name AS name FROM match
+            UNION
+            SELECT DISTINCT player2_name AS name FROM match
+        `);
+        const matchedPlayers = matchedPlayersResult.rows.map((row) => row.name);
 
-      if (newPlayers.length === 0) {
-          return res.status(400).json({ error: 'No new players available to create matches' });
-      }
+        const newPlayers = allPlayers.filter(
+            (player) => !matchedPlayers.includes(player)
+        );
 
-      // Shuffle new players randomly
-      for (let i = newPlayers.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [newPlayers[i], newPlayers[j]] = [newPlayers[j], newPlayers[i]];
-      }
+        if (newPlayers.length === 0) {
+            return res
+                .status(400)
+                .json({ error: 'No new players available to create matches' });
+        }
 
-      // Prepare matches
-      const matches = [];
-      const defaultVenue = 'ABC Stadium';
-      let currentDate = new Date(); // Start from today
-      currentDate.setHours(15, 0, 0, 0); // Set the time to 3 PM IST
-      const endTime = new Date(currentDate);
-      endTime.setHours(19, 0, 0, 0); // Set end time to 7 PM IST
+        const defaultVenue = 'ABC Stadium';
+        let currentDate;
 
-      while (newPlayers.length > 1) {
-          if (currentDate >= endTime) {
-              // If the time exceeds 7 PM, shift to the next day at 3 PM
-              currentDate.setDate(currentDate.getDate() + 1);
-              currentDate.setHours(15, 0, 0, 0);
-          }
+        // Fetch the latest match date and time from the database
+        const latestMatchResult = await pool.query(`
+            SELECT MAX(match_date) AS latest_match_date
+            FROM match
+        `);
+        const latestMatchDate = latestMatchResult.rows[0].latest_match_date;
 
-          matches.push({
-              player1_name: newPlayers.pop(),
-              player2_name: newPlayers.pop(),
-              player1_score: 0,
-              player2_score: 0,
-              match_date: currentDate.toISOString(),
-              venue: defaultVenue,
-              status: determineMatchStatus(currentDate),
-          });
+        if (latestMatchDate) {
+            currentDate = new Date(latestMatchDate); // Start from the latest match's time
+            currentDate.setHours(currentDate.getHours() + 1); // Increment by 1 hour
+        } else {
+            // If no matches exist, start from today at 3 PM
+            currentDate = new Date();
+            currentDate.setHours(15, 0, 0, 0); // 3 PM
+        }
 
-          // Increment time by 1 hour for the next match
-          currentDate.setHours(currentDate.getHours() + 1);
-      }
+        // Define the daily time range
+        const startTime = new Date(currentDate);
+        startTime.setHours(15, 0, 0, 0); // 3 PM
+        const endTime = new Date(currentDate);
+        endTime.setHours(19, 0, 0, 0); // 7 PM
 
-      // If there's an odd player, give them a bye
-      if (newPlayers.length === 1) {
-          if (currentDate >= endTime) {
-              // Shift to the next day if beyond 7 PM
-              currentDate.setDate(currentDate.getDate() + 1);
-              currentDate.setHours(15, 0, 0, 0);
-          }
+        // Ensure matches are only scheduled within the time range
+        if (currentDate < startTime) {
+            currentDate = startTime; // Reset to 3 PM if earlier
+        } else if (currentDate >= endTime) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            currentDate.setHours(15, 0, 0, 0); // 3 PM
+        }
 
-          matches.push({
-              player1_name: newPlayers.pop(),
-              player2_name: 'no opponent registered yet',
-              player1_score: 0,
-              player2_score: 0,
-              match_date: currentDate.toISOString(),
-              venue: defaultVenue,
-              status: determineMatchStatus(currentDate),
-          });
-      }
+        const matches = [];
 
-      // Insert matches into the match table
-      const insertQuery = `
-          INSERT INTO match (player1_name, player2_name, player1_score, player2_score, match_date, venue, status)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `;
+        // If there's an unmatched player, pair them with the first new player
+        if (unmatchedPlayer && newPlayers.length > 0) {
+            const newPlayer = newPlayers.pop();
 
-      for (const match of matches) {
-          await pool.query(insertQuery, [
-              match.player1_name,
-              match.player2_name,
-              match.player1_score,
-              match.player2_score,
-              match.match_date,
-              match.venue,
-              match.status,
-          ]);
-      }
+            matches.push({
+                player1_name: unmatchedPlayer,
+                player2_name: newPlayer,
+                player1_score: 0,
+                player2_score: 0,
+                match_date: currentDate.toISOString(),
+                venue: defaultVenue,
+                status: determineMatchStatus(currentDate),
+            });
 
-      res.status(201).json({ message: 'Matches generated successfully', matches });
-  } catch (error) {
-      console.error('Error generating matches:', error);
-      res.status(500).json({ error: 'Failed to generate matches' });
-  }
+            // Increment time for the next match
+            currentDate.setHours(currentDate.getHours() + 1);
+            if (currentDate >= endTime) {
+                currentDate.setDate(currentDate.getDate() + 1);
+                currentDate.setHours(15, 0, 0, 0);
+            }
+
+            // Remove the unmatched player from the "no opponent registered yet" state
+            await pool.query(
+                `DELETE FROM match WHERE player1_name = $1 AND player2_name = 'no opponent registered yet'`,
+                [unmatchedPlayer]
+            );
+        }
+
+        // Create matches for remaining new players
+        while (newPlayers.length > 1) {
+            matches.push({
+                player1_name: newPlayers.pop(),
+                player2_name: newPlayers.pop(),
+                player1_score: 0,
+                player2_score: 0,
+                match_date: currentDate.toISOString(),
+                venue: defaultVenue,
+                status: determineMatchStatus(currentDate),
+            });
+
+            // Increment time for the next match
+            currentDate.setHours(currentDate.getHours() + 1);
+            if (currentDate >= endTime) {
+                currentDate.setDate(currentDate.getDate() + 1);
+                currentDate.setHours(15, 0, 0, 0);
+            }
+        }
+
+        // Handle the last player (if odd number of new players)
+        if (newPlayers.length === 1) {
+            matches.push({
+                player1_name: newPlayers.pop(),
+                player2_name: 'no opponent registered yet',
+                player1_score: 0,
+                player2_score: 0,
+                match_date: currentDate.toISOString(),
+                venue: defaultVenue,
+                status: determineMatchStatus(currentDate),
+            });
+        }
+
+        // Insert matches into the match table
+        const insertQuery = `
+            INSERT INTO match (player1_name, player2_name, player1_score, player2_score, match_date, venue, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `;
+
+        for (const match of matches) {
+            await pool.query(insertQuery, [
+                match.player1_name,
+                match.player2_name,
+                match.player1_score,
+                match.player2_score,
+                match.match_date,
+                match.venue,
+                match.status,
+            ]);
+        }
+
+        res.status(201).json({ message: 'Matches generated successfully', matches });
+    } catch (error) {
+        console.error('Error generating matches:', error);
+        res.status(500).json({ error: 'Failed to generate matches' });
+    }
 };
+
 
 
 

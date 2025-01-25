@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-const defaultImage = '../style/default-placeholder.png'; 
+
+const defaultImage = '../style/default-placeholder.png';
 
 const Card = styled.div`
   background-color: #fff;
@@ -16,7 +17,7 @@ const Card = styled.div`
   border: 1px solid #ddd;
 
   &:hover {
-    transform: scale(1.05); /* Slight zoom effect on hover */
+    transform: scale(1.05);
   }
 `;
 
@@ -25,7 +26,6 @@ const CardImage = styled.div`
   height: 180px;
   margin-bottom: 20px;
   border-radius: 4px;
-  /* You can add an image or a placeholder here */
 `;
 
 const CardContent = styled.div`
@@ -45,21 +45,35 @@ const CardText = styled.p`
   margin: 5px 0;
 `;
 
-const PlayerCard = ({ name, institute, age, points, rank }) => {
+const DeleteButton = styled.button`
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 15px;
+
+  &:hover {
+    background-color: #c0392b;
+  }
+`;
+
+const PlayerCardAdmin = ({ name, institute, age, points, rank, onDelete }) => {
   return (
     <Card>
-      <CardImage src={defaultImage}/>
-     
-     
+      <CardImage src={defaultImage} />
       <CardContent>
         <CardTitle>{name}</CardTitle>
         <CardText>Institute: {institute || 'Independent'}</CardText>
         <CardText>Age: {age}</CardText>
         <CardText>Points: {points}</CardText>
         <CardText>Rank: {rank}</CardText>
+        <DeleteButton onClick={() => onDelete(name)}>Delete</DeleteButton>
       </CardContent>
     </Card>
   );
 };
 
-export default PlayerCard;
+export default PlayerCardAdmin;

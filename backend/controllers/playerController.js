@@ -55,7 +55,7 @@ const getAllPlayers = async (req, res) => {
 
 // Optional: Function to delete a player (if needed)
 const deletePlayer = async (req, res) => {
-  const { name } = req.params;
+  const { name } = req.query; // Retrieve 'name' from query parameters
 
   if (!name) {
     return res.status(400).json({ error: 'Player name is required.' });
@@ -77,6 +77,7 @@ const deletePlayer = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete player.' });
   }
 };
+
 
 
 

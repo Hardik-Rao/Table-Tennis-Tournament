@@ -90,7 +90,7 @@ const RegistrationForm = ({ setIsRegistered }) => {
       adminKey,
       role: 'admin',
     };
-
+    
     try {
       const checkResponse = await fetch(
         `http://localhost:5000/api/admins/check?email=${email}`,
@@ -114,7 +114,7 @@ const RegistrationForm = ({ setIsRegistered }) => {
       if (response.ok) {
         setSuccessMessage('Registration successful! Redirecting to login...');
         setIsRegistered(true);
-        setTimeout(() => navigate('/home'), 3000);
+        setTimeout(() => navigate('/home'), 1000);
       } else {
         setErrorMessage(data.message);
       }

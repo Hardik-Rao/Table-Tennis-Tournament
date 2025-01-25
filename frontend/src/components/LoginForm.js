@@ -90,7 +90,7 @@ const LoginForm = () => {
       const data = await response.json();
       if (response.ok) {
         if (data.role === 'admin') {
-          alert('Login successful!');
+         
           navigate('/home');
         } else {
           setErrorMessage('Access denied: User is not an admin');

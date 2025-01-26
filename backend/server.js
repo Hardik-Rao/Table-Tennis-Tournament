@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const path = require('path');
 const { pool } = require('./config/db'); // Import database pool configuration
 
 const app = express();
@@ -24,13 +25,16 @@ app.use('/api/rankings', rankingRoutes); // Ranking-related endpoints
 app.use('/api/live-scores', liveScoreRoutes); // Live score endpoints
 app.use('/api/admins', registrationAdminRoutes); // User-related endpoints (e.g., /register, /login)
 
-// Basic server endpoint to test if the server is running
-app.get('/', (req, res) => {
-    res.send('Backend server is running successfully!');
+// Serve React frontend (Ensure correct path)
+app.use(express.static(path.join(__dirname, 'frontend/build')));
+
+// Fallback route for React app to handle all the routes and return index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
 });
 
 // Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

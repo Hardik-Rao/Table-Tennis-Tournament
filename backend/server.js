@@ -26,11 +26,11 @@ app.use('/api/live-scores', liveScoreRoutes); // Live score endpoints
 app.use('/api/admins', registrationAdminRoutes); // User-related endpoints (e.g., /register, /login)
 
 // Serve React frontend (Ensure correct path)
-app.use(express.static(path.join(__dirname, 'frontend/build')));
+app.use(express.static(path.join(__dirname, 'build'))); // Adjusted to point to 'build' in the backend folder
 
 // Fallback route for React app to handle all the routes and return index.html
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'index.html')); // Corrected fallback to serve index.html from 'build'
 });
 
 // Start the server

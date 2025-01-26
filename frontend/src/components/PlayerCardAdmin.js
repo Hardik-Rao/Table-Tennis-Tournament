@@ -70,7 +70,7 @@ const PlayerCardAdmin = ({ name, institute, age, points, rank, onDelete }) => {
         <CardText>Age: {age}</CardText>
         <CardText>Points: {points}</CardText>
         <CardText>Rank: {rank}</CardText>
-        <DeleteButton onClick={() => onDelete(name)}>Delete</DeleteButton>
+        <DeleteButton onClick={() => onDelete(name)}>Remove</DeleteButton>
       </CardContent>
     </Card>
   );

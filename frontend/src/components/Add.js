@@ -100,8 +100,10 @@ const Add = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+
     try {
-      const response = await fetch('http://localhost:10000/api/players', {
+      const response = await fetch(`${apiBaseUrl}/api/players`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

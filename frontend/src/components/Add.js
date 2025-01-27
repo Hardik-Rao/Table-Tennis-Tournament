@@ -101,7 +101,7 @@ const Add = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/api/players', {
+      const response = await fetch('http://localhost:10000/api/players', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

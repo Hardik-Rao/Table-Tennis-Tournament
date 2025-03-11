@@ -92,7 +92,7 @@ const MainPage = () => {
             onMouseLeave={(e) =>
               (e.target.style.backgroundColor = styles.dashboardButton.backgroundColor)
             }
-            onClick={() => navigate('/registerAdmin')}
+            onClick={() => navigate('/registeradmin')}
           >
             Admin Dashboard
           </button>
@@ -104,6 +104,7 @@ const MainPage = () => {
             onMouseLeave={(e) =>
               (e.target.style.backgroundColor = styles.dashboardButton.backgroundColor)
             }
+            onClick={()=>navigate('/registerguest')}
           >
             Guest Dashboard
           </button>

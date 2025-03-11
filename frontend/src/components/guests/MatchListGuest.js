@@ -62,27 +62,7 @@ const MatchListGuest = () => {
     }
   };
 
-  const generateMatches = async () => {
-    try {
-      const response = await fetch(
-        'http://localhost:5000/api/matches/generate',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      fetchMatches();
-    } catch (error) {
-      console.error('Error generating matches:', error);
-    }
-  };
+  
 
   useEffect(() => {
     fetchMatches();
@@ -100,7 +80,7 @@ const MatchListGuest = () => {
           ))}
         </MatchCardContainer>
       )}
-      <AddButton onClick={generateMatches}>Add Matches of New Arrivals</AddButton>
+      
     </MatchListContainer>
   );
 };

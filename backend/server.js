@@ -17,6 +17,7 @@ const playerRoutes = require('./routes/playerRoutes'); // Routes for players
 const rankingRoutes = require('./routes/rankingRoutes'); // Routes for rankings
 const liveScoreRoutes = require('./routes/liveScoreRoutes'); // Routes for live scores
 const registrationAdminRoutes = require('./routes/registrationAdminRoutes'); // Routes for user-related actions (e.g., login, register)
+const registrationGuestRoutes = require('./routes/registrationGuestRoutes');
 //const registrationPlayerRoutes = require('./routes/registrationPlayerRoutes');
 // Register routes
 app.use('/api/matches', matchRoutes); // Match-related endpoints
@@ -24,6 +25,7 @@ app.use('/api/players', playerRoutes); // Player-related endpoints
 app.use('/api/rankings', rankingRoutes); // Ranking-related endpoints
 app.use('/api/live-scores', liveScoreRoutes); // Live score endpoints
 app.use('/api/admins', registrationAdminRoutes); // User-related endpoints (e.g., /register, /login)
+app.use('/api/guest', registrationGuestRoutes);
 //app.use('/api/player', registrationPlayerRoutes);
 // Serve React frontend (Ensure correct path)
 app.use(express.static(path.join(__dirname, 'build'))); // Adjusted to point to 'build' in the backend folder

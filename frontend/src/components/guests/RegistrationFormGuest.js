@@ -70,7 +70,7 @@ const AlreadyRegisteredText = styled.p`
   color: #34495e;
 `;
 
-const RegistrationForm = ({ setIsRegistered }) => {
+const RegistrationFormGuest= ({ setIsRegistered }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [adminKey, setAdminKey] = useState('');
@@ -83,38 +83,38 @@ const RegistrationForm = ({ setIsRegistered }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const adminDetails = {
+    const GuestDetails = {
       username,
       password,
       email,
-      adminKey,
-      role: player,
+     
+      role: 'guest',
     };
     
     try {
       const checkResponse = await fetch(
-        `http://localhost:5000/api/player/check?email=${email}`,
+        `http://localhost:5000/api/guest/check?email=${email}`,
         { method: 'GET' }
       );
       const checkData = await checkResponse.json();
 
       if (checkResponse.ok && checkData.isRegistered) {
-        setErrorMessage('player is already registered. Redirecting to login...');
+        setErrorMessage('Guest is already registered. Redirecting to login...');
         setTimeout(() => setIsRegisteredState(true), 3000);
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/player/register', {
+      const response = await fetch('http://localhost:5000/api/guest/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(playerDetails),
+        body: JSON.stringify(GuestDetails),
       });
 
       const data = await response.json();
       if (response.ok) {
         setSuccessMessage('Registration successful! Redirecting to login...');
         setIsRegistered(true);
-        setTimeout(() => navigate('/home'), 1000);
+        setTimeout(() => navigate('/homeGuest'), 1000);
       } else {
         setErrorMessage(data.message);
       }
@@ -133,7 +133,7 @@ const RegistrationForm = ({ setIsRegistered }) => {
 
   return (
     <FormWrapper>
-      <FormTitle>Admin Registration</FormTitle>
+      <FormTitle>Guest Registration</FormTitle>
 
       <form onSubmit={handleSubmit}>
         <InputLabel>Username:</InputLabel>
@@ -177,4 +177,4 @@ const RegistrationForm = ({ setIsRegistered }) => {
   );
 };
 
-export default RegistrationForm;
+export default RegistrationFormGuest;

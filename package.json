@@ -1,0 +1,17 @@
+{
+  "name": "table-tennis-tournament-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"cd table-tennis-tournament-backend && npm run dev\" \"cd table-tennis-tournament-frontend && npm run dev\"",
+    "start": "concurrently \"cd table-tennis-tournament-backend && npm start\" \"cd table-tennis-tournament-frontend && npm start\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

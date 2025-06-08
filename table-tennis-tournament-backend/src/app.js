@@ -1,20 +1,16 @@
-// src/app.js
 const express = require('express');
-const cors = require('cors'); // For handling cross-origin requests
+const cors = require('cors');
+const playerRoutes = require('./routes/api');
 
 const app = express();
 
-// Middleware
-app.use(express.json()); // Body parser for JSON requests
-app.use(cors()); // Enable CORS for all routes (you might want to restrict this in production)
+app.use(cors());
+app.use(express.json());
 
-// Define a simple root route for testing if the server is alive
 app.get('/', (req, res) => {
-    res.send('API is running...');
+  res.json({ message: 'Table Tennis Tournament API is running!' });
 });
 
-// TODO: Future routes will go here
-// app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/tournaments', require('./routes/tournamentRoutes'));
+app.use('/api', playerRoutes);
 
 module.exports = app;

@@ -1,14 +1,16 @@
-// server.js
-require('dotenv').config(); // Load environment variables from .env file
-
-const app = require('./src/app'); // <<< Make sure this path is './src/app'
-const { connectDB } = require('./src/config/db');
+require('dotenv').config();
+const { sequelize } = require('./src/models');
+const app = require('./src/app'); // Import the app from app.js
 
 const PORT = process.env.PORT || 5000;
 
-// Connect to database
-connectDB();
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ PostgreSQL database connection has been established successfully.');
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Unable to connect to the database:', error);
+  });

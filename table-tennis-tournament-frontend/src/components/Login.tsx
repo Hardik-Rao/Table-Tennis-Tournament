@@ -51,8 +51,8 @@ const Login = () => {
       return;
     }
 
-    if (!loginData.email.endsWith("@iitjammu.ac.in")) {
-      setError("Please use your IIT Jammu email address");
+    if (!loginData.email.includes("@college.edu")) {
+      setError("Please use your college email address");
       return;
     }
 
@@ -60,21 +60,25 @@ const Login = () => {
     setError("");
 
     try {
-      // Mock API call - replace with real authentication
-      console.log("Mock: Attempting login for:", loginData.email);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock authentication logic
-      if (loginData.email === "test@iitjammu.ac.in" && loginData.password === "password123") {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
         setSuccess("Login successful! Redirecting to dashboard...");
         
-        // Store user session (in real app, use proper session management)
-        localStorage.setItem('userSession', JSON.stringify({
-          email: loginData.email,
-          loginTime: new Date().toISOString()
-        }));
+        // Store token and user data
+        localStorage.setItem('authToken', data.data.token);
+        localStorage.setItem('teamData', JSON.stringify(data.data.team));
         
         // Redirect to dashboard after success message
         setTimeout(() => {
@@ -82,11 +86,11 @@ const Login = () => {
         }, 2000);
         
       } else {
-        setError("Invalid email or password. Please try again.");
+        setError(data.message || "Login failed. Please try again.");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("Login failed. Please try again later.");
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +128,7 @@ const Login = () => {
                 Welcome Back
               </Typography>
               <Typography variant="body1" className="opacity-90">
-                IIT Jammu Team Portal
+                Table Tennis Team Portal
               </Typography>
             </div>
           </div>
@@ -149,11 +153,11 @@ const Login = () => {
               {/* Email Field */}
               <TextField
                 fullWidth
-                label="IIT Jammu Email"
+                label="College Email"
                 type="email"
                 value={loginData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="yourname@iitjammu.ac.in"
+                placeholder="yourname@college.edu"
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
@@ -243,20 +247,23 @@ const Login = () => {
                 startIcon={<Person />}
                 className="border-blue-600 text-blue-600 hover:bg-blue-50"
               >
-                Register as Team Leader
+                Register as Team Captain
               </Button>
             </div>
 
             {/* Demo Credentials */}
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <Typography variant="caption" className="text-gray-600 block mb-2">
-                <strong>Demo Credentials for Testing:</strong>
+                <strong>Test Credentials:</strong>
               </Typography>
               <Typography variant="caption" className="text-gray-600 block">
-                Email: test@iitjammu.ac.in
+                Email: captain1@college.edu → Password: password123
               </Typography>
               <Typography variant="caption" className="text-gray-600 block">
-                Password: password123
+                Email: captain2@college.edu → Password: admin123
+              </Typography>
+              <Typography variant="caption" className="text-gray-600 block">
+                Email: captain3@college.edu → Password: test123
               </Typography>
             </div>
           </div>

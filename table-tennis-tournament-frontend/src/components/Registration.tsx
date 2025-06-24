@@ -33,7 +33,9 @@ const Registration = () => {
     hostelName: "",
     roomNumber: "",
     teamName: "",
-    primarySport: ""
+    primarySport: "",
+    password:"",
+    confirmPassword:""
   });
   
   const [otpSent, setOtpSent] = useState(false);
@@ -154,17 +156,28 @@ const Registration = () => {
     setOtpError("");
     await sendOtp();
   };
-
-  const validateCaptainDetails = () => {
-    const requiredFields = ['fullName', 'rollNumber', 'branch', 'year', 'phoneNumber', 'teamName', 'primarySport'];
-    const missingFields = requiredFields.filter(field => !formData[field] || !formData[field].trim());
-    
-    if (missingFields.length > 0) {
-      alert("Please fill in all required captain details: " + missingFields.join(', '));
-      return false;
-    }
-    return true;
-  };
+const validateCaptainDetails = () => {
+  const requiredFields = ['fullName', 'rollNumber', 'branch', 'year', 'phoneNumber', 'teamName', 'primarySport', 'password'];
+  const missingFields = requiredFields.filter(field => !formData[field] || !formData[field].trim());
+  
+  if (missingFields.length > 0) {
+    alert("Please fill in all required captain details: " + missingFields.join(', '));
+    return false;
+  }
+  
+  // Password validation
+  if (formData.password.length < 8) {
+    alert("Password must be at least 8 characters long");
+    return false;
+  }
+  
+  if (formData.password !== formData.confirmPassword) {
+    alert("Passwords don't match");
+    return false;
+  }
+  
+  return true;
+};
 
   const validatePlayersData = () => {
     // Updated to include ALL required fields from PlayerDetailForm
@@ -198,7 +211,7 @@ const Registration = () => {
     let completed = 25; // Email verified
     
     // Captain details completion
-    const captainRequiredFields = ['fullName', 'rollNumber', 'branch', 'year', 'phoneNumber', 'teamName', 'primarySport'];
+    const captainRequiredFields = ['fullName', 'rollNumber', 'branch', 'year', 'phoneNumber', 'teamName', 'primarySport','password'];
     const captainCompleted = captainRequiredFields.filter(field => formData[field] && formData[field].trim()).length;
     completed += (captainCompleted / captainRequiredFields.length) * 25;
     
@@ -229,61 +242,143 @@ const Registration = () => {
   };
 
   // FRONTEND-ONLY VERSION - Simulate registration submission
-  const submitRegistration = async () => {
-    if (!validateCaptainDetails() || !validatePlayersData()) {
-      return;
-    }
+const submitRegistration = async () => {
+  if (!validateCaptainDetails() || !validatePlayersData()) {
+    return;
+  }
 
-    const registrationData = {
-      captain: formData,
-      players: playersData,
-      registrationDate: new Date().toISOString(),
-      verificationEmail: formData.email
-    };
+  // Transform the data to match your API structure
+  const registrationData = {
+    team_name: formData.teamName,
+    captain_email: formData.email,
+    captain_name: formData.fullName,
+    captain_roll_number: formData.rollNumber,
+    captain_branch: formData.branch,
+    captain_year: formData.year,
+    captain_phone: formData.phoneNumber,
+    password: formData.password,
+    primary_sport: formData.primarySport,
+    players: []
+  };
 
-    try {
-      // Simulate API delay
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Log the data (in real app, this would be sent to backend)
-      console.log("🎉 Registration Data:", JSON.stringify(registrationData, null, 2));
-      
-      alert("🎉 Team registration completed successfully!\n\n📋 Registration data has been logged to the console.\n\n(In production, this would be saved to the database)");
-      
-      // Reset all forms
-      setFormData({
-        email: "",
-        fullName: "",
-        rollNumber: "",
-        branch: "",
-        year: "",
-        phoneNumber: "",
-        whatsappNumber: "",
-        hostelName: "",
-        roomNumber: "",
-        teamName: "",
-        primarySport: ""
+  // Transform players data to match API structure
+  for (let i = 1; i <= 3; i++) {
+    const player = playersData[i];
+    if (player.name) { // Only add if player data exists
+      registrationData.players.push({
+        player_name: player.name,
+        roll_number: player.rollNumber,
+        branch: player.branch,
+        year: player.year,
+        phone_number: player.phoneNumber,
+        sport: player.sport,
+        playing_style: player.playingStyle,
+        grip_style: player.gripStyle,
+        rubber_type: player.rubberType
       });
-      setPlayersData({ 1: {}, 2: {}, 3: {} });
-      setOtpSent(false);
-      setOtp("");
-      setVerified(false);
-      setGeneratedOTP("");
-    } catch (error) {
-      console.error("Registration error:", error);
-      alert("Registration failed. Please try again.");
-    } finally {
-      setLoading(false);
     }
-  };
+  }
 
-  const getCurrentStep = () => {
-    if (!verified) return 0;
-    if (!validateCaptainDetails()) return 1;
-    if (!validatePlayersData()) return 2;
-    return 3;
-  };
+  try {
+    setLoading(true);
+    
+    // Make the POST request to your API
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(registrationData)
+    });
+
+    // Log response details for debugging
+    console.log("Response status:", response.status);
+    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+    
+    // Get response text first to see what we're dealing with
+    const responseText = await response.text();
+    console.log("Raw response:", responseText);
+
+    if (!response.ok) {
+      // Try to parse error as JSON, fallback to text
+      let errorMessage;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+      } catch (jsonError) {
+        errorMessage = `HTTP ${response.status}: ${responseText || 'Unknown error'}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Try to parse success response as JSON
+    let result;
+    try {
+      result = JSON.parse(responseText);
+      console.log("Registration successful:", result);
+    } catch (jsonError) {
+      console.log("Response is not JSON, treating as text:", responseText);
+      result = { message: responseText };
+    }
+    
+    alert("🎉 Team registration completed successfully!");
+    
+    // Reset all forms
+    setFormData({
+      email: "",
+      fullName: "",
+      rollNumber: "",
+      branch: "",
+      year: "",
+      phoneNumber: "",
+      whatsappNumber: "",
+      hostelName: "",
+      roomNumber: "",
+      teamName: "",
+      primarySport: "",
+      password: "",
+      confirmPassword: ""
+    });
+    setPlayersData({ 1: {}, 2: {}, 3: {} });
+    setOtpSent(false);
+    setOtp("");
+    setVerified(false);
+    setGeneratedOTP("");
+    
+  } catch (error) {
+    console.error("Registration error:", error);
+    alert(`Registration failed: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const getCurrentStep = () => {
+  if (!verified) return 0;
+
+  const requiredCaptainFields = ['fullName', 'rollNumber', 'branch', 'year', 'phoneNumber', 'teamName', 'primarySport','password'];
+  const captainIncomplete = requiredCaptainFields.some(field => !formData[field] || !formData[field].trim());
+  if (captainIncomplete) return 1;
+
+  const requiredPlayerFields = [
+    'name', 
+    'rollNumber', 
+    'branch', 
+    'year', 
+    'phoneNumber', 
+    'sport',
+    'playingStyle',
+    'gripStyle',
+    'rubberType'
+  ];
+  for (let i = 1; i <= 3; i++) {
+    const player = playersData[i];
+    const missing = requiredPlayerFields.some(field => !player[field] || !player[field].trim());
+    if (missing) return 2;
+  }
+
+  return 3;
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 py-8">
@@ -433,13 +528,55 @@ const Registration = () => {
                 )}
               </div>
 
-              {verified && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <Typography className="text-green-700 font-medium">
-                    ✅ Email verified successfully! Please complete the team registration below.
-                  </Typography>
-                </div>
-              )}
+            {verified && (
+  <div className="mt-6">
+    <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-6">
+      <Typography className="text-green-700 font-medium">
+        ✅ Email verified successfully!
+      </Typography>
+    </div>
+    
+    {/* Account Setup Section */}
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <Typography variant="h6" className="mb-4 font-semibold text-blue-800">
+        Account Setup
+      </Typography>
+      <Typography variant="body2" className="mb-4 text-blue-600">
+        Create a secure password for your team captain account
+      </Typography>
+      
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            type="password"
+            label="Create Password *"
+            value={formData.password}
+            onChange={(e) => handleInputChange('password', e.target.value)}
+            placeholder="Create a strong password"
+            helperText="Minimum 8 characters"
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            type="password"
+            label="Confirm Password *"
+            value={formData.confirmPassword}
+            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            placeholder="Confirm your password"
+            error={formData.password !== formData.confirmPassword && formData.confirmPassword.length > 0}
+            helperText={formData.password !== formData.confirmPassword && formData.confirmPassword.length > 0 ? "Passwords don't match" : ""}
+          />
+        </Grid>
+      </Grid>
+      
+      <Typography variant="body2" className="mt-4 text-gray-600">
+        Once you complete the password setup, you can proceed with team registration details below.
+      </Typography>
+    </div>
+  </div>
+)}
             </div>
 
             {verified && (

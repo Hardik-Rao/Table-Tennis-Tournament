@@ -51,8 +51,8 @@ const Login = () => {
       return;
     }
 
-    if (!loginData.email.includes("@college.edu")) {
-      setError("Please use your college email address");
+    if (!loginData.email.includes("@iitjammu.ac.in")) {
+      setError("Please use  college email address");
       return;
     }
 

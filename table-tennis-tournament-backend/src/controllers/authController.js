@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Team, Player } = require('../models');
+const { Team, Player, sequelize } = require('../models');
 
 // Generate JWT Token
 const generateToken = (teamId, captainEmail) => {
@@ -46,7 +46,7 @@ exports.login = async (req, res) => {
     }
 
     // Check if email is college email
-    if (!email.includes('@college.edu')) {
+    if (!email.includes('@iitjammu.ac.in')) {
       return res.status(400).json({
         success: false,
         message: 'Please use your college email address'
@@ -93,6 +93,7 @@ exports.login = async (req, res) => {
         'branch',
         'year',
         'phone_number',
+        'sport',
         'playing_style',
         'grip_style', 
         'rubber_type',
@@ -135,10 +136,14 @@ exports.login = async (req, res) => {
   }
 };
 
-// Register Controller (for future use)
+// Enhanced Register Controller with full team and players registration
 exports.register = async (req, res) => {
+  // Start database transaction
+  const transaction = await sequelize.transaction();
+  
   try {
     const {
+      // Team/Captain Information
       team_name,
       captain_email,
       captain_name,
@@ -147,26 +152,116 @@ exports.register = async (req, res) => {
       captain_year,
       captain_phone,
       password,
-      primary_sport
+      primary_sport,
+      // Players Information (array of player objects)
+      players
     } = req.body;
 
-    // Validation
-    if (!team_name || !captain_email || !captain_name || !password) {
+    // Validation for required team fields
+    if (!team_name || !captain_email || !captain_name || !captain_roll_number || 
+        !captain_branch || !captain_year || !captain_phone || !password) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: 'All required fields must be provided'
+        message: 'All team and captain fields are required'
       });
     }
 
-    // Check if team already exists
+    // Validate email format and college domain
+    if (!captain_email.includes('@iitjammu.ac.in')) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Please use your college email address (@iitjammu.ac.in)'
+      });
+    }
+
+    // Validate players array
+    if (!players || !Array.isArray(players) || players.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'At least one player must be registered'
+      });
+    }
+
+    // Validate each player
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+      if (!player.player_name || !player.roll_number || !player.branch || 
+          !player.year || !player.phone_number || !player.sport || 
+          !player.playing_style || !player.grip_style || !player.rubber_type) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `All fields are required for player ${i + 1}`
+        });
+      }
+    }
+
+    // Check if team name already exists
+    const existingTeamName = await Team.findOne({
+      where: { team_name: team_name }
+    });
+
+    if (existingTeamName) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Team name already exists. Please choose a different name.'
+      });
+    }
+
+    // Check if captain email already exists
     const existingTeam = await Team.findOne({
       where: { captain_email: captain_email }
     });
 
     if (existingTeam) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: 'Team captain with this email already exists'
+      });
+    }
+
+    // Check if captain roll number already exists
+    const existingCaptainRoll = await Team.findOne({
+      where: { captain_roll_number: captain_roll_number }
+    });
+
+    if (existingCaptainRoll) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Captain roll number already registered'
+      });
+    }
+
+    // Check for duplicate roll numbers in players
+    const rollNumbers = players.map(p => p.roll_number);
+    const uniqueRollNumbers = new Set(rollNumbers);
+    
+    if (rollNumbers.length !== uniqueRollNumbers.size) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Duplicate roll numbers found in players list'
+      });
+    }
+
+    // Check if any player roll numbers already exist in database
+    const existingPlayers = await Player.findAll({
+      where: {
+        roll_number: rollNumbers
+      }
+    });
+
+    if (existingPlayers.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Roll number(s) already registered: ${existingPlayers.map(p => p.roll_number).join(', ')}`
       });
     }
 
@@ -187,20 +282,60 @@ exports.register = async (req, res) => {
       password_hash,
       salt,
       email_verified: false // Will need email verification
-    });
+    }, { transaction });
+
+    // Create players
+    const playerData = players.map((player, index) => ({
+      team_id: newTeam.team_id,
+      player_name: player.player_name,
+      roll_number: player.roll_number,
+      branch: player.branch,
+      year: player.year,
+      phone_number: player.phone_number,
+      sport: player.sport,
+      playing_style: player.playing_style,
+      grip_style: player.grip_style,
+      rubber_type: player.rubber_type,
+      player_position: index + 1, // Set position based on order
+      avatar_url: player.avatar_url || null
+    }));
+
+    const createdPlayers = await Player.bulkCreate(playerData, { transaction });
+
+    // Commit transaction
+    await transaction.commit();
 
     res.status(201).json({
       success: true,
-      message: 'Team registered successfully. Please verify your email.',
+      message: 'Team and players registered successfully. Please verify your email.',
       data: {
         team_id: newTeam.team_id,
         team_name: newTeam.team_name,
-        captain_email: newTeam.captain_email
+        captain_email: newTeam.captain_email,
+        players_count: createdPlayers.length
       }
     });
 
   } catch (error) {
+    // Rollback transaction on error
+    await transaction.rollback();
     console.error('Registration error:', error);
+    
+    // Handle specific database errors
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Duplicate entry found. Please check team name, email, or roll numbers.'
+      });
+    }
+    
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error: ' + error.errors.map(e => e.message).join(', ')
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -258,6 +393,7 @@ exports.getProfile = async (req, res) => {
         'branch',
         'year', 
         'phone_number',
+        'sport',
         'playing_style',
         'grip_style',
         'rubber_type',

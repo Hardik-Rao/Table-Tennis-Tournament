@@ -1,275 +1,221 @@
 // src/pages/Login.jsx
-import { useState } from "react";
-import { 
-  TextField, 
-  Button, 
-  Typography,
+import { useState } from 'react';
+import {
+  Container,
   Paper,
-  Grid,
-  InputAdornment,
-  IconButton,
+  TextField,
+  Button,
+  Typography,
+  Box,
   Alert,
-  Link
-} from "@mui/material";
-import { 
-  Login as LoginIcon, 
-  Visibility, 
-  VisibilityOff, 
-  Email, 
+  InputAdornment,
+  IconButton
+} from '@mui/material';
+import {
+  Email,
   Lock,
-  Person,
-  School
+  Visibility,
+  VisibilityOff,
+  Login as LoginIcon
 } from '@mui/icons-material';
+import axios from 'axios';
 
 const Login = () => {
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: ""
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
   });
-  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const handleInputChange = (field, value) => {
-    setLoginData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
     // Clear error when user starts typing
-    if (error) setError("");
+    if (error) setError('');
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
-    if (!loginData.email || !loginData.password) {
-      setError("Please enter both email and password");
-      return;
-    }
-
-    if (!loginData.email.includes("@iitjammu.ac.in")) {
-      setError("Please use  college email address");
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
+    setLoading(true);
+    setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: loginData.email,
-          password: loginData.password
-        })
+      const response = await axios.post('http://localhost:5000/api/auth/login', {
+        email: formData.email,
+        password: formData.password
       });
 
-      const data = await response.json();
+      if (response.data.success) {
+        // Store the JWT token with the key expected by Dashboard
+        localStorage.setItem('authToken', response.data.data.token);
+        
+        // Store user session info with the key expected by Dashboard
+        localStorage.setItem('userSession', JSON.stringify({
+          email: response.data.data.team.captain_email,
+          name: response.data.data.team.captain_name,
+          teamId: response.data.data.team.team_id,
+          teamName: response.data.data.team.team_name,
+          captainRollNumber: response.data.data.team.captain_roll_number,
+          captainBranch: response.data.data.team.captain_branch,
+          captainYear: response.data.data.team.captain_year,
+          captainPhone: response.data.data.team.captain_phone,
+          primarySport: response.data.data.team.primary_sport
+        }));
 
-      if (data.success) {
-        setSuccess("Login successful! Redirecting to dashboard...");
+        // Optional: Also store team info for backward compatibility
+        localStorage.setItem('teamInfo', JSON.stringify({
+          teamId: response.data.data.team.team_id,
+          teamName: response.data.data.team.team_name,
+          captainName: response.data.data.team.captain_name,
+          captainEmail: response.data.data.team.captain_email
+        }));
+
+        console.log('Login successful, redirecting to dashboard...');
         
-        // Store token and user data
-        localStorage.setItem('authToken', data.data.token);
-        localStorage.setItem('teamData', JSON.stringify(data.data.team));
-        
-        // Redirect to dashboard after success message
-        setTimeout(() => {
-          window.location.href = "/dashboard"; // or use React Router navigation
-        }, 2000);
-        
-      } else {
-        setError(data.message || "Login failed. Please try again.");
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      setError("Network error. Please check your connection and try again.");
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError('Invalid email or password');
+      } else if (err.response?.status >= 500) {
+        setError('Server error. Please try again later.');
+      } else if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
+        setError('Cannot connect to server. Please check if the server is running.');
+      } else {
+        setError('Login failed. Please try again.');
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
-
-  const handleForgotPassword = () => {
-    alert("Forgot password functionality will be implemented soon!");
-    // In real app, navigate to forgot password page
-  };
-
-  const handleRegisterRedirect = () => {
-    window.location.href = "/register"; // or use React Router navigation
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-      </div>
+    <Box sx={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      p: 2
+    }}>
+      <Container maxWidth="sm">
+        <Paper
+          elevation={10}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <Box textAlign="center" mb={4}>
+            <LoginIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+            <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
+              Team Captain Login
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Sign in to manage your team
+            </Typography>
+          </Box>
 
-      <div className="relative w-full max-w-md">
-        <Paper elevation={24} className="rounded-3xl overflow-hidden backdrop-blur-sm bg-white/90">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 text-center relative">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative">
-              <div className="flex justify-center mb-4">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <School className="text-4xl" />
-                </div>
-              </div>
-              <Typography variant="h4" component="h1" className="font-bold mb-2">
-                Welcome Back
-              </Typography>
-              <Typography variant="body1" className="opacity-90">
-                Table Tennis Team Portal
-              </Typography>
-            </div>
-          </div>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
 
-          {/* Login Form */}
-          <div className="p-8">
-            <form onSubmit={handleLogin} className="space-y-6">
-              {/* Error Alert */}
-              {error && (
-                <Alert severity="error" className="mb-4">
-                  {error}
-                </Alert>
-              )}
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Email Address"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              margin="normal"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email color="primary" />
+                  </InputAdornment>
+                ),
+              }}
+              helperText="Use your college email (@iitjammu.ac.in)"
+            />
 
-              {/* Success Alert */}
-              {success && (
-                <Alert severity="success" className="mb-4">
-                  {success}
-                </Alert>
-              )}
+            <TextField
+              fullWidth
+              label="Password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleChange}
+              required
+              margin="normal"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-              {/* Email Field */}
-              <TextField
-                fullWidth
-                label="College Email"
-                type="email"
-                value={loginData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="yourname@college.edu"
-                variant="outlined"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email className="text-gray-400" />
-                    </InputAdornment>
-                  ),
-                }}
-                className="mb-4"
-                disabled={isLoading}
-              />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={loading}
+              sx={{
+                mt: 3,
+                py: 1.5,
+                borderRadius: 3,
+                background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #5a67d8, #6b46c1)',
+                }
+              }}
+            >
+              {loading ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </form>
 
-              {/* Password Field */}
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                value={loginData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Enter your password"
-                variant="outlined"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock className="text-gray-400" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={togglePasswordVisibility}
-                        edge="end"
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                disabled={isLoading}
-              />
-
-              {/* Forgot Password Link */}
-              <div className="text-right">
-                <Link
-                  component="button"
-                  type="button"
-                  onClick={handleForgotPassword}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                  disabled={isLoading}
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-
-              {/* Login Button */}
+          <Box textAlign="center" mt={3}>
+            <Typography variant="body2" color="text.secondary">
+              Don't have an account?{' '}
               <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                size="large"
-                disabled={isLoading}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3 text-lg font-semibold shadow-lg"
-                startIcon={isLoading ? null : <LoginIcon />}
+                variant="text"
+                onClick={() => window.location.href = '/register'}
+                sx={{ textTransform: 'none' }}
               >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Signing In...
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
+                Register your team
               </Button>
-            </form>
-
-            {/* Register Link */}
-            <div className="mt-8 text-center">
-              <Typography variant="body2" className="text-gray-600 mb-2">
-                Don't have an account?
-              </Typography>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={handleRegisterRedirect}
-                disabled={isLoading}
-                startIcon={<Person />}
-                className="border-blue-600 text-blue-600 hover:bg-blue-50"
-              >
-                Register as Team Captain
-              </Button>
-            </div>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <Typography variant="caption" className="text-gray-600 block mb-2">
-                <strong>Test Credentials:</strong>
-              </Typography>
-              <Typography variant="caption" className="text-gray-600 block">
-                Email: captain1@college.edu → Password: password123
-              </Typography>
-              <Typography variant="caption" className="text-gray-600 block">
-                Email: captain2@college.edu → Password: admin123
-              </Typography>
-              <Typography variant="caption" className="text-gray-600 block">
-                Email: captain3@college.edu → Password: test123
-              </Typography>
-            </div>
-          </div>
+            </Typography>
+          </Box>
         </Paper>
-      </div>
-    </div>
+      </Container>
+    </Box>
   );
 };
 

@@ -12,7 +12,8 @@ import {
   CardContent,
   Avatar,
   Chip,
-  Paper
+  Paper,
+  Alert
 } from "@mui/material";
 import { 
   SportsTennis, 
@@ -25,80 +26,110 @@ const Dashboard = () => {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [captain, setCaptain] = useState(null);
+  const [teamData, setTeamData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Mock: Get captain data from localStorage
+    // Get captain data from localStorage
     const session = localStorage.getItem("userSession");
     if (session) {
-      const user = JSON.parse(session);
-      setCaptain(user);
+      try {
+        const user = JSON.parse(session);
+        setCaptain(user);
+      } catch (err) {
+        console.error("Error parsing user session:", err);
+        handleLogout();
+        return;
+      }
+    } else {
+      // No session found, redirect to login
+      handleLogout();
+      return;
     }
 
-    // Replace this with real API call to fetch players of the logged-in captain
-    const fetchPlayers = async () => {
+    // Fetch team profile data including players
+    const fetchTeamData = async () => {
       try {
-        // Simulate API delay
-        await new Promise((res) => setTimeout(res, 1000));
+        const token = localStorage.getItem("authToken");
+        
+        if (!token) {
+          console.error("No authentication token found");
+          throw new Error("No authentication token found");
+        }
+        
+        console.log("Fetching team data with token:", token.substring(0, 20) + "...");
 
-        // Enhanced mock player data
-        const dummyPlayers = [
-  { 
-    id: 1, 
-    name: "Alex Johnson", 
-    team: "Thunder Hawks",
-    avatar: "https://i.pravatar.cc/150?img=1",
-    style: "Aggressive",
-    grip: "Shakehand",
-    rubber: "Butterfly Tenergy 05"
-  },
-  { 
-    id: 2, 
-    name: "Sarah Chen", 
-    team: "Thunder Hawks", 
-    avatar: "https://i.pravatar.cc/150?img=2",
-    style: "Defensive",
-    grip: "Penhold",
-    rubber: "Yasaka Mark V"
-  },
-  { 
-    id: 3, 
-    name: "Mike Rodriguez", 
-    team: "Thunder Hawks", 
-    avatar: "https://i.pravatar.cc/150?img=3",
-    style: "All-Round",
-    grip: "Shakehand",
-    rubber: "Donic Bluefire M1"
-  },
-  { 
-    id: 4, 
-    name: "Emma Thompson", 
-    team: "Thunder Hawks", 
-    avatar: "https://i.pravatar.cc/150?img=4",
-    style: "Looping",
-    grip: "Penhold",
-    rubber: "Stiga Mantra M"
-  }
-];
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Token expired or invalid
+            throw new Error("Session expired");
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        setPlayers(dummyPlayers);
-      } catch (err) {
-        console.error("Failed to fetch players", err);
+        const result = await response.json();
+        console.log("API Response:", result);
+        
+        if (result.success && result.data && result.data.team) {
+          const team = result.data.team;
+          setTeamData(team);
+          
+          // Format players data to match your PlayerCard component expectations
+          const formattedPlayers = team.players.map(player => ({
+            id: player.player_id,
+            name: player.player_name,
+            team: team.team_name,
+            avatar: player.avatar_url || `https://i.pravatar.cc/150?u=${player.player_id}`,
+            style: player.playing_style,
+            grip: player.grip_style,
+            rubber: player.rubber_type,
+            // Additional fields that might be useful
+            rollNumber: player.roll_number,
+            branch: player.branch,
+            year: player.year,
+            phone: player.phone_number,
+            sport: player.sport,
+            position: player.player_position
+          }));
+          
+          setPlayers(formattedPlayers);
+        } else {
+          throw new Error(result.message || "Failed to fetch team data");
+        }
+      } catch (error) {
+        console.error("Failed to fetch team data:", error);
+        setError(error.message);
+        
+        // If authentication error, logout user
+        if (error.message.includes("Session expired") || error.message.includes("authentication")) {
+          handleLogout();
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPlayers();
+    fetchTeamData();
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("userSession");
+    localStorage.removeItem("authToken");
     window.location.href = "/login";
   };
 
+  // Calculate stats from actual player data
   const totalWins = players.reduce((sum, player) => sum + (player.wins || 0), 0);
-  const totalMatches = players.reduce((sum, player) => sum + (player.wins || 0) + (player.losses || 0), 0);
+  const totalLosses = players.reduce((sum, player) => sum + (player.losses || 0), 0);
+  const totalMatches = totalWins + totalLosses;
 
   return (
     <Box sx={{ 
@@ -127,10 +158,15 @@ const Dashboard = () => {
                 <Typography variant="h4" fontWeight="bold" color="primary">
                   Captain Dashboard
                 </Typography>
-                {captain && (
-                  <Typography variant="subtitle1" color="text.secondary">
-                    Welcome back, {captain.email}
-                  </Typography>
+                {teamData && (
+                  <>
+                    <Typography variant="h6" color="text.primary">
+                      {teamData.team_name}
+                    </Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Welcome back, {teamData.captain_name}
+                    </Typography>
+                  </>
                 )}
               </Box>
             </Box>
@@ -153,6 +189,13 @@ const Dashboard = () => {
             </Button>
           </Box>
         </Paper>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
         {/* Stats Section */}
         {!loading && players.length > 0 && (
@@ -226,11 +269,28 @@ const Dashboard = () => {
           <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
             <People color="primary" />
             Team Players
+            {teamData && (
+              <Chip 
+                label={teamData.primary_sport || 'Table Tennis'} 
+                color="primary" 
+                size="small"
+                sx={{ ml: 1 }}
+              />
+            )}
           </Typography>
 
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
               <CircularProgress size={60} thickness={4} />
+            </Box>
+          ) : error ? (
+            <Box textAlign="center" py={8}>
+              <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+                Failed to load team data
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {error}
+              </Typography>
             </Box>
           ) : players.length === 0 ? (
             <Box textAlign="center" py={8}>

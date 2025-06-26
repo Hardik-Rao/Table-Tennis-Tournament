@@ -21,7 +21,8 @@ import {
   TableRow,
   Collapse,
   Alert,
-  Divider
+  Divider,
+  CircularProgress
 } from '@mui/material';
 import {
   AdminPanelSettings,
@@ -47,141 +48,83 @@ interface Player {
   position?: string;
   wins: number;
   losses: number;
+  roll_number: string;
+  branch: string;
+  phone: string;
+  grip?: string;
+  rubber?: string;
+}
+
+interface Captain {
+  name: string;
+  email: string;
+  avatar?: string;
+  roll_number: string;
+  branch: string;
+  year: string;
+  phone: string;
 }
 
 interface Team {
   id: number;
   name: string;
   sport: string;
-  captain: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
+  captain: Captain;
   players: Player[];
   totalWins: number;
   totalMatches: number;
+  playerCount: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: {
+    teams: Team[];
+    totalTeams: number;
+    totalPlayers: number;
+    totalMatches: number;
+  };
 }
 
 const AdminDashboard: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [expandedTeam, setExpandedTeam] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalTeams: 0,
+    totalPlayers: 0,
+    totalMatches: 0
+  });
 
   useEffect(() => {
-    // Mock data for teams - replace with actual API call
     const fetchTeams = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setLoading(true);
+        setError(null);
         
-        const mockTeams: Team[] = [
-          {
-            id: 1,
-            name: "Thunder Hawks",
-            sport: "Table Tennis",
-            captain: {
-              name: "Mike Rodriguez",
-              email: "mike.rodriguez@iit.ac.in",
-              avatar: "https://i.pravatar.cc/150?img=3"
-            },
-            players: [
-              {
-                id: 1,
-                name: "Alex Johnson",
-                sport: "Table Tennis",
-                year: "3rd",
-                avatar: "https://i.pravatar.cc/150?img=1",
-                position: "Singles Player",
-                wins: 15,
-                losses: 3
-              },
-              {
-                id: 2,
-                name: "Sarah Chen",
-                sport: "Table Tennis",
-                year: "2nd",
-                avatar: "https://i.pravatar.cc/150?img=2",
-                position: "Doubles Specialist",
-                wins: 12,
-                losses: 2
-              }
-            ],
-            totalWins: 27,
-            totalMatches: 32
-          },
-          {
-            id: 2,
-            name: "Lightning Bolts",
-            sport: "Table Tennis",
-            captain: {
-              name: "Priya Sharma",
-              email: "priya.sharma@iit.ac.in",
-              avatar: "https://i.pravatar.cc/150?img=5"
-            },
-            players: [
-              {
-                id: 3,
-                name: "Rahul Verma",
-                sport: "Table Tennis",
-                year: "4th",
-                avatar: "https://i.pravatar.cc/150?img=6",
-                position: "Aggressive Player",
-                wins: 18,
-                losses: 2
-              },
-              {
-                id: 4,
-                name: "Anita Patel", 
-                sport: "Table Tennis",
-                year: "3rd",
-                avatar: "https://i.pravatar.cc/150?img=7",
-                position: "Defensive Specialist",
-                wins: 14,
-                losses: 4
-              }
-            ],
-            totalWins: 32,
-            totalMatches: 38
-          },
-          {
-            id: 3,
-            name: "Fire Dragons",
-            sport: "Badminton",
-            captain: {
-              name: "Arjun Singh",
-              email: "arjun.singh@iit.ac.in",
-              avatar: "https://i.pravatar.cc/150?img=8"
-            },
-            players: [
-              {
-                id: 5,
-                name: "Sneha Gupta",
-                sport: "Badminton",
-                year: "2nd",
-                avatar: "https://i.pravatar.cc/150?img=9",
-                position: "Singles Specialist",
-                wins: 10,
-                losses: 3
-              },
-              {
-                id: 6,
-                name: "Karan Mehta",
-                sport: "Badminton", 
-                year: "4th",
-                avatar: "https://i.pravatar.cc/150?img=10",
-                position: "Doubles Expert",
-                wins: 13,
-                losses: 2
-              }
-            ],
-            totalWins: 23,
-            totalMatches: 28
-          }
-        ];
+        const response = await fetch('http://localhost:5000/api/teams');
         
-        setTeams(mockTeams);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data: ApiResponse = await response.json();
+        
+        if (data.success) {
+          setTeams(data.data.teams);
+          setStats({
+            totalTeams: data.data.totalTeams,
+            totalPlayers: data.data.totalPlayers,
+            totalMatches: data.data.totalMatches
+          });
+        } else {
+          throw new Error('Failed to fetch teams data');
+        }
+        
       } catch (error) {
         console.error('Failed to fetch teams:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch teams');
       } finally {
         setLoading(false);
       }
@@ -204,9 +147,48 @@ const AdminDashboard: React.FC = () => {
     window.location.href = '/';
   };
 
-  const totalTeams = teams.length;
-  const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
-  const totalMatches = teams.reduce((sum, team) => sum + team.totalMatches, 0);
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+      }}>
+        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
+          <CircularProgress size={60} sx={{ mb: 2 }} />
+          <Typography variant="h6">Loading teams data...</Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+      }}>
+        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3, maxWidth: 500 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <Typography variant="h6">Error Loading Data</Typography>
+            <Typography>{error}</Typography>
+          </Alert>
+          <Button variant="contained" onClick={handleRefresh}>
+            Try Again
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{
@@ -245,8 +227,16 @@ const AdminDashboard: React.FC = () => {
 
             <Box display="flex" gap={2}>
               <Button
+                variant="outlined"
+                onClick={handleRefresh}
+                sx={{ borderRadius: 3, px: 3, py: 1.5 }}
+              >
+                Refresh Data
+              </Button>
+              
+              <Button
                 variant="contained"
-                startIcon={<schedule/>}
+                startIcon={<Schedule/>}
                 onClick={handleUpdateSchedule}
                 sx={{
                   borderRadius: 3,
@@ -292,7 +282,7 @@ const AdminDashboard: React.FC = () => {
               <CardContent sx={{ textAlign: 'center' }}>
                 <Groups fontSize="large" sx={{ mb: 1 }} />
                 <Typography variant="h3" fontWeight="bold">
-                  {totalTeams}
+                  {stats.totalTeams}
                 </Typography>
                 <Typography variant="h6">
                   Total Teams
@@ -310,7 +300,7 @@ const AdminDashboard: React.FC = () => {
               <CardContent sx={{ textAlign: 'center' }}>
                 <Person fontSize="large" sx={{ mb: 1 }} />
                 <Typography variant="h3" fontWeight="bold">
-                  {totalPlayers}
+                  {stats.totalPlayers}
                 </Typography>
                 <Typography variant="h6">
                   Total Players
@@ -328,7 +318,7 @@ const AdminDashboard: React.FC = () => {
               <CardContent sx={{ textAlign: 'center' }}>
                 <EmojiEvents fontSize="large" sx={{ mb: 1 }} />
                 <Typography variant="h3" fontWeight="bold">
-                  {totalMatches}
+                  {stats.totalMatches}
                 </Typography>
                 <Typography variant="h6">
                   Total Matches
@@ -355,9 +345,12 @@ const AdminDashboard: React.FC = () => {
             Teams Overview
           </Typography>
 
-          {loading ? (
-            <Box display="flex" justifyContent="center" py={4}>
-              <Typography>Loading teams...</Typography>
+          {teams.length === 0 ? (
+            <Box display="flex" justifyContent="center" py={8}>
+              <Alert severity="info">
+                <Typography variant="h6">No Teams Found</Typography>
+                <Typography>No teams have been registered yet. Teams will appear here once they register.</Typography>
+              </Alert>
             </Box>
           ) : (
             <Grid container spacing={3}>
@@ -366,7 +359,7 @@ const AdminDashboard: React.FC = () => {
                   <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.1)' }}>
                     <CardContent>
                       {/* Team Header */}
-                      <Box display="flex" justifyContent="between" alignItems="center" mb={2}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                         <Box display="flex" alignItems="center" gap={2} flex={1}>
                           <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
                             <SportsTennis />
@@ -387,10 +380,10 @@ const AdminDashboard: React.FC = () => {
                         <Box display="flex" alignItems="center" gap={2}>
                           <Box textAlign="right">
                             <Typography variant="body2" color="text.secondary">
-                              Win Rate: {((team.totalWins / team.totalMatches) * 100).toFixed(0)}%
+                              Win Rate: {team.totalMatches > 0 ? ((team.totalWins / team.totalMatches) * 100).toFixed(0) : 0}%
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {team.players.length} Players
+                              {team.playerCount} Players
                             </Typography>
                           </Box>
                           
@@ -415,12 +408,12 @@ const AdminDashboard: React.FC = () => {
                           >
                             {team.captain.name.split(' ').map(n => n[0]).join('')}
                           </Avatar>
-                          <Box>
+                          <Box flex={1}>
                             <Typography variant="body2" fontWeight="bold">
                               Captain: {team.captain.name}
                             </Typography>
                             <Typography variant="body2">
-                              {team.captain.email}
+                              {team.captain.email} • {team.captain.roll_number} • {team.captain.year} Year
                             </Typography>
                           </Box>
                         </Box>
@@ -430,69 +423,78 @@ const AdminDashboard: React.FC = () => {
                       <Collapse in={expandedTeam === team.id}>
                         <Divider sx={{ mb: 2 }} />
                         <Typography variant="subtitle1" fontWeight="bold" mb={2}>
-                          Team Players
+                          Team Players ({team.playerCount})
                         </Typography>
                         
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Player</TableCell>
-                                <TableCell>Position</TableCell>
-                                <TableCell>Year</TableCell>
-                                <TableCell align="center">W-L</TableCell>
-                                <TableCell align="center">Win Rate</TableCell>
-                                <TableCell align="center">Actions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {team.players.map((player) => {
-                                const winRate = ((player.wins / (player.wins + player.losses)) * 100).toFixed(0);
-                                return (
-                                  <TableRow key={player.id}>
-                                    <TableCell>
-                                      <Box display="flex" alignItems="center" gap={2}>
-                                        <Avatar 
-                                          src={player.avatar} 
-                                          sx={{ width: 32, height: 32 }}
-                                        >
-                                          {player.name.split(' ').map(n => n[0]).join('')}
-                                        </Avatar>
-                                        {player.name}
-                                      </Box>
-                                    </TableCell>
-                                    <TableCell>{player.position}</TableCell>
-                                    <TableCell>
-                                      <Chip label={`${player.year} Year`} size="small" />
-                                    </TableCell>
-                                    <TableCell align="center">
-                                      {player.wins}-{player.losses}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                      <Chip 
-                                        label={`${winRate}%`}
-                                        size="small"
-                                        color={parseInt(winRate) >= 80 ? 'success' : parseInt(winRate) >= 60 ? 'warning' : 'error'}
-                                      />
-                                    </TableCell>
-                                    <TableCell align="center">
-                                      <Tooltip title="View Details">
-                                        <IconButton size="small">
-                                          <Visibility fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title="Edit Player">
-                                        <IconButton size="small">
-                                          <Edit fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                        {team.players.length === 0 ? (
+                          <Alert severity="warning">
+                            This team has no players registered yet.
+                          </Alert>
+                        ) : (
+                          <TableContainer>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Player</TableCell>
+                                  <TableCell>Roll Number</TableCell>
+                                  <TableCell>Branch</TableCell>
+                                  <TableCell>Year</TableCell>
+                                  <TableCell align="center">W-L</TableCell>
+                                  <TableCell align="center">Win Rate</TableCell>
+                                  <TableCell align="center">Actions</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {team.players.map((player) => {
+                                  const totalGames = player.wins + player.losses;
+                                  const winRate = totalGames > 0 ? ((player.wins / totalGames) * 100).toFixed(0) : '0';
+                                  return (
+                                    <TableRow key={player.id}>
+                                      <TableCell>
+                                        <Box display="flex" alignItems="center" gap={2}>
+                                          <Avatar 
+                                            src={player.avatar} 
+                                            sx={{ width: 32, height: 32 }}
+                                          >
+                                            {player.name.split(' ').map(n => n[0]).join('')}
+                                          </Avatar>
+                                          {player.name}
+                                        </Box>
+                                      </TableCell>
+                                      <TableCell>{player.roll_number}</TableCell>
+                                      <TableCell>{player.branch}</TableCell>
+                                      <TableCell>
+                                        <Chip label={`${player.year} Year`} size="small" />
+                                      </TableCell>
+                                      <TableCell align="center">
+                                        {player.wins}-{player.losses}
+                                      </TableCell>
+                                      <TableCell align="center">
+                                        <Chip 
+                                          label={`${winRate}%`}
+                                          size="small"
+                                          color={parseInt(winRate) >= 80 ? 'success' : parseInt(winRate) >= 60 ? 'warning' : 'error'}
+                                        />
+                                      </TableCell>
+                                      <TableCell align="center">
+                                        <Tooltip title="View Details">
+                                          <IconButton size="small">
+                                            <Visibility fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Edit Player">
+                                          <IconButton size="small">
+                                            <Edit fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        )}
                       </Collapse>
                     </CardContent>
                   </Card>

@@ -66,12 +66,12 @@ exports.login = async (req, res) => {
     }
 
     // Check if email is verified
-    if (!team.email_verified) {
-      return res.status(401).json({
-        success: false,
-        message: 'Please verify your email address before logging in'
-      });
-    }
+    // if (!team.email_verified) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'Please verify your email address before logging in'
+    //   });
+    // }
 
     // Verify password
     const isValidPassword = verifyPassword(password, team.salt, team.password_hash);

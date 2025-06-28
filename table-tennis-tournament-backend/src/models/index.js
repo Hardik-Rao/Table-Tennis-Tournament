@@ -1,6 +1,7 @@
 const { Sequelize } = require('sequelize');
 const PlayerModel = require('./player');
 const TeamModel = require('./team');
+const MatchModel = require('./match');
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -17,6 +18,7 @@ const sequelize = new Sequelize(
 // Initialize all models
 const Player = PlayerModel(sequelize);
 const Team = TeamModel(sequelize);
+const Match = MatchModel(sequelize);
 
 // Define associations
 Player.belongsTo(Team, { foreignKey: 'team_id' });
@@ -26,5 +28,6 @@ Team.hasMany(Player, { foreignKey: 'team_id' });
 module.exports = {
   sequelize,
   Player,
-  Team
+  Team,
+  Match
 };

@@ -13,6 +13,7 @@ import Scores from "./pages/LiveScores";
 import Leaderboard from "./pages/LeaderBoard";
 import AdminLoginModal from "./components/AdminLoginModal";
 import AdminDashboard from "./pages/AdminDashboard";
+import ManualUpdateSchedule from "./pages/ManulUpdateSchedule";
 import { Box, Typography } from "@mui/material";
 
 const PrivateRoute: React.FC = () => {
@@ -48,10 +49,9 @@ const AdminLoginPage: React.FC = () => {
   );
 };
 
-
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const hideLayoutOnRoutes = ["/register", "/admin/login", "/admin/dashboard"];
+  const hideLayoutOnRoutes = ["/register", "/admin/login", "/admin/dashboard", "/admin/schedule"];
 
   const hideLayout = hideLayoutOnRoutes.includes(location.pathname);
 
@@ -75,10 +75,10 @@ const AppContent: React.FC = () => {
 
           <Route path="/admin" element={<PrivateRoute />}>
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="schedule" element={<ManualUpdateSchedule />} /> {/* Fixed this line */}
           </Route>
 
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-
         </Routes>
       </main>
 

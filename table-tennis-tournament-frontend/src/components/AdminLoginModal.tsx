@@ -34,15 +34,26 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ open, onClose }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Predefined admin credentials (later move to env file)
-  const ADMIN_EMAIL = 'admin@sportstournament.com';
-  const ADMIN_PASSWORD = 'admin123';
+  // Get admin credentials from environment variables (Vite syntax)
+  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@sportstournament.com';
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+
+  // Debug: Check if environment variables are loaded
+  console.log('Admin Email from env:', ADMIN_EMAIL);
+  console.log('Admin Password from env:', ADMIN_PASSWORD ? '***' : 'undefined');
 
   const handleLogin = async () => {
     setError('');
     setLoading(true);
 
     try {
+      // Check if environment variables are loaded
+      if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+        setError('Admin credentials not configured. Please check environment variables.');
+        setLoading(false);
+        return;
+      }
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -129,14 +140,11 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ open, onClose }) => {
                 </InputAdornment>
               ),
             }}
-            // Use InputLabelProps to target the label directly
             InputLabelProps={{
               sx: {
-                // Adjust translateY for default (not-shrunk) state
-                transform: 'translate(14px, 19px) scale(1)', // Increased to 19px
+                transform: 'translate(14px, 19px) scale(1)',
                 '&.MuiInputLabel-shrink': {
-                  // Adjust translateY for shrunk state
-                  transform: 'translate(14px, -3px) scale(0.75)', // Adjusted to -3px (less negative)
+                  transform: 'translate(14px, -3px) scale(0.75)',
                 },
               },
             }}
@@ -144,7 +152,6 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ open, onClose }) => {
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
               },
-              // Removed the redundant label styling from here
             }}
           />
 
@@ -172,12 +179,11 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ open, onClose }) => {
                 </InputAdornment>
               ),
             }}
-            // Apply similar adjustments for password field for consistency
             InputLabelProps={{
               sx: {
-                transform: 'translate(14px, 19px) scale(1)', // Adjusted to 19px
+                transform: 'translate(14px, 19px) scale(1)',
                 '&.MuiInputLabel-shrink': {
-                  transform: 'translate(14px, -3px) scale(0.75)', // Adjusted to -3px
+                  transform: 'translate(14px, -3px) scale(0.75)',
                 },
               },
             }}
@@ -185,27 +191,8 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ open, onClose }) => {
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
               },
-              // Removed the redundant label styling from here
             }}
           />
-
-          {/* Demo Credentials Display */}
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: 'rgba(25, 118, 210, 0.1)',
-              borderRadius: 2,
-              border: '1px solid rgba(25, 118, 210, 0.2)'
-            }}
-          >
-            <Typography variant="body2" fontWeight="bold" color="primary" gutterBottom>
-              Demo Credentials:
-            </Typography>
-            <Typography variant="body2" color="text.secondary" component="div">
-              <strong>Email:</strong> admin@sportstournament.com<br />
-              <strong>Password:</strong> admin123
-            </Typography>
-          </Box>
         </Box>
       </DialogContent>
 

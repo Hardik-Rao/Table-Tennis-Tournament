@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Outlet, useNavigate } from "react-router-dom";
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -19,31 +19,21 @@ import { Box, Typography } from "@mui/material";
 const PrivateRoute: React.FC = () => {
   const adminSession = localStorage.getItem('adminSession');
   const isAuthenticated = adminSession !== null;
-
-  return isAuthenticated ? <Outlet /> : <Navigate to="/admin/login" replace />;
+  
+  return isAuthenticated ? <Outlet /> : <Navigate to="/admin/login" />;
 };
 
 const AdminLoginPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(true);
-
+  
   const handleModalClose = () => {
     setIsModalOpen(false);
   };
-
+  
   return (
-    <Box sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-      color: 'white',
-      textAlign: 'center',
-      p: 3
-    }}>
-      <Typography variant="h4" mb={2}>Admin Access Required</Typography>
-      <Typography variant="body1">Please log in to manage the tournament dashboard.</Typography>
+    <Box>
+      <Typography variant="h4">Admin Access Required</Typography>
+      <Typography>Please log in to manage the tournament dashboard.</Typography>
       <AdminLoginModal open={isModalOpen} onClose={handleModalClose} />
     </Box>
   );
@@ -51,38 +41,36 @@ const AdminLoginPage: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const hideLayoutOnRoutes = ["/register", "/admin/login", "/admin/dashboard", "/admin/schedule"];
-
+  
   const hideLayout = hideLayoutOnRoutes.includes(location.pathname);
-
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div>
       {!hideLayout && <Header />}
       {!hideLayout && <Navbar />}
-
-      <main className={`${hideLayout ? "p-0" : "container mx-auto px-6 py-12"}`}>
-        <Routes>
-          <Route path="/register" element={<Registration />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/Login" element={<Login />} />
-          <Route path="/players" element={<Players />} />
-          <Route path="/schedule" element={<Schedule />} />
-          <Route path="/scores" element={<Scores />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-
-          <Route path="/admin" element={<PrivateRoute />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="schedule" element={<ManualUpdateSchedule />} /> {/* Fixed this line */}
-          </Route>
-
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        </Routes>
-      </main>
-
-      {!hideLayout && <Footer />}
+      
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<Registration />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/players" element={<Players />} />
+        <Route path="/schedule" element={<Schedule />} />
+        <Route path="/scores" element={<Scores />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<PrivateRoute />}>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="schedule" element={<ManualUpdateSchedule />} />
+        </Route>
+        
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+      
+      {!hideLayout && <Footer navigate={navigate} />}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 // src/pages/ScheduleManagement.tsx
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -24,9 +25,7 @@ import {
   IconButton,
   Tooltip,
   Avatar,
-  Alert,
-  Card,
-  CardContent
+  Alert
 } from '@mui/material';
 import {
   Schedule as ScheduleIcon,
@@ -39,7 +38,9 @@ import {
   Groups,
   AccessTime,
   LocationOn,
-  Save as SaveIcon
+  Save as SaveIcon,
+  EmojiEvents,
+  Visibility
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -68,7 +69,7 @@ const ScheduleManagement: React.FC = () => {
     venue: ''
   });
 
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const teams = ['Thunder Hawks', 'Lightning Bolts', 'Fire Dragons', 'Storm Eagles', 'Ice Wolves'];
   const sports = ['Table Tennis', 'Badminton', 'Chess', 'Basketball'];
@@ -169,7 +170,7 @@ const ScheduleManagement: React.FC = () => {
   };
 
   const goBack = () => {
-    navigate('/admin/dashboard'); // Use navigate instead of window.location.href
+    navigate('/admin/dashboard');
   };
 
   const scheduledMatches = matches.filter(m => m.status === 'scheduled');
@@ -199,13 +200,13 @@ const ScheduleManagement: React.FC = () => {
                 <IconButton
                   onClick={goBack}
                   sx={{
-                    bgcolor: 'rgba(0, 0, 0, 0.04)', // A subtle background for the icon button
+                    bgcolor: 'rgba(0, 0, 0, 0.04)',
                     '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.08)', // Darker on hover
+                      bgcolor: 'rgba(0, 0, 0, 0.08)',
                     },
-                    borderRadius: '50%', // Make it circular
-                    p: 1, // Add some padding
-                    color: 'text.secondary' // Default icon color
+                    borderRadius: '50%',
+                    p: 1,
+                    color: 'text.secondary'
                   }}
                 >
                   <ArrowBack />
@@ -309,7 +310,7 @@ const ScheduleManagement: React.FC = () => {
                           <Chip
                             label={match.status}
                             size="small"
-                            color={getStatusColor(match.status)}
+                            color={getStatusColor(match.status) as any}
                           />
                         </TableCell>
                         <TableCell align="center">
@@ -343,7 +344,7 @@ const ScheduleManagement: React.FC = () => {
             }}
           >
             <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EmojiEvents color="secondary" /> {/* Assuming EmojiEvents for completed */}
+              <EmojiEvents color="secondary" />
               Completed Matches ({completedMatches.length})
             </Typography>
             {completedMatches.length === 0 ? (
@@ -395,7 +396,7 @@ const ScheduleManagement: React.FC = () => {
                           <Chip
                             label={match.status}
                             size="small"
-                            color={getStatusColor(match.status)}
+                            color={getStatusColor(match.status) as any}
                           />
                         </TableCell>
                         <TableCell align="center">
@@ -483,22 +484,22 @@ const ScheduleManagement: React.FC = () => {
               </TextField>
             </Grid>
             <Grid item xs={12}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="Date and Time"
-                  value={formData.dateTime}
-                  onChange={(newValue) => setFormData({ ...formData, dateTime: newValue || new Date() })}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      fullWidth
-                      variant="outlined"
-                      margin="normal"
-                      sx={{ borderRadius: 2 }}
-                    />
-                  )}
-                />
-              </LocalizationProvider>
+              <DateTimePicker
+                label="Date and Time"
+                value={formData.dateTime}
+                onChange={(newValue) => setFormData({ ...formData, dateTime: newValue || new Date() })}
+                slots={{
+                  textField: TextField
+                }}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    variant: "outlined" as const,
+                    margin: "normal" as const,
+                    sx: { borderRadius: 2 }
+                  }
+                }}
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField

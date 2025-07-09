@@ -35,7 +35,6 @@ import {
   Visibility,
   EmojiEvents,
   SportsTennis,
-  CalendarToday,
   Logout as LogoutIcon
 } from '@mui/icons-material';
 

@@ -1,4 +1,4 @@
-// src/pages/Dashboard.jsx
+// src/pages/Dashboard.tsx
 import { useEffect, useState } from "react";
 import PlayerCard from "../components/PlayerCard";
 import { 
@@ -22,20 +22,60 @@ import {
   Logout as LogoutIcon 
 } from "@mui/icons-material";
 
+// Type definitions
+interface Player {
+  id: number;
+  name: string;
+  team: string;
+  avatar: string;
+  style: string;
+  grip: string;
+  rubber: string;
+  rollNumber: string;
+  branch: string;
+  year: string;
+  phone: string;
+  sport: string;
+  position: string;
+  wins?: number;
+  losses?: number;
+}
+
+interface TeamData {
+  team_name: string;
+  captain_name: string;
+  primary_sport?: string;
+  players: {
+    player_id: number;
+    player_name: string;
+    avatar_url?: string;
+    playing_style: string;
+    grip_style: string;
+    rubber_type: string;
+    roll_number: string;
+    branch: string;
+    year: string;
+    phone_number: string;
+    sport: string;
+    player_position: string;
+  }[];
+}
+
+
+
 const Dashboard = () => {
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [captain, setCaptain] = useState(null);
-  const [teamData, setTeamData] = useState(null);
-  const [error, setError] = useState(null);
+
+  const [teamData, setTeamData] = useState<TeamData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get captain data from localStorage
     const session = localStorage.getItem("userSession");
     if (session) {
       try {
-        const user = JSON.parse(session);
-        setCaptain(user);
+        JSON.parse(session);
       } catch (err) {
         console.error("Error parsing user session:", err);
         handleLogout();
@@ -79,11 +119,11 @@ const Dashboard = () => {
         console.log("API Response:", result);
         
         if (result.success && result.data && result.data.team) {
-          const team = result.data.team;
+          const team: TeamData = result.data.team;
           setTeamData(team);
           
           // Format players data to match your PlayerCard component expectations
-          const formattedPlayers = team.players.map(player => ({
+          const formattedPlayers: Player[] = team.players.map((player) => ({
             id: player.player_id,
             name: player.player_name,
             team: team.team_name,
@@ -106,10 +146,11 @@ const Dashboard = () => {
         }
       } catch (error) {
         console.error("Failed to fetch team data:", error);
-        setError(error.message);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        setError(errorMessage);
         
         // If authentication error, logout user
-        if (error.message.includes("Session expired") || error.message.includes("authentication")) {
+        if (error instanceof Error && (error.message.includes("Session expired") || error.message.includes("authentication"))) {
           handleLogout();
         }
       } finally {

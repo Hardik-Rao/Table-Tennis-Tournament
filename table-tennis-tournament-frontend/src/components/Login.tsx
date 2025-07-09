@@ -1,4 +1,4 @@
-// src/pages/Login.jsx
+// src/pages/Login.tsx
 import { useState } from 'react';
 import {
   Container,
@@ -18,18 +18,45 @@ import {
   VisibilityOff,
   Login as LoginIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
-const Login = () => {
-  const [formData, setFormData] = useState({
+interface FormData {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  success: boolean;
+  data: {
+    token: string;
+    team: {
+      captain_email: string;
+      captain_name: string;
+      team_id: string;
+      team_name: string;
+      captain_roll_number: string;
+      captain_branch: string;
+      captain_year: string;
+      captain_phone: string;
+      primary_sport: string;
+    };
+  };
+}
+
+interface ErrorResponse {
+  message: string;
+}
+
+const Login: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     password: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -38,13 +65,13 @@ const Login = () => {
     if (error) setError('');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post<LoginResponse>('http://localhost:5000/api/auth/login', {
         email: formData.email,
         password: formData.password
       });
@@ -79,17 +106,23 @@ const Login = () => {
         // Redirect to dashboard
         window.location.href = '/dashboard';
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
       
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.response?.status === 401) {
-        setError('Invalid email or password');
-      } else if (err.response?.status >= 500) {
-        setError('Server error. Please try again later.');
-      } else if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
-        setError('Cannot connect to server. Please check if the server is running.');
+      if (axios.isAxiosError(err)) {
+        const axiosError = err as AxiosError<ErrorResponse>;
+        
+        if (axiosError.response?.data?.message) {
+          setError(axiosError.response.data.message);
+        } else if (axiosError.response?.status === 401) {
+          setError('Invalid email or password');
+        } else if (axiosError.response?.status && axiosError.response.status >= 500) {
+          setError('Server error. Please try again later.');
+        } else if (axiosError.code === 'ECONNREFUSED' || axiosError.message.includes('Network Error')) {
+          setError('Cannot connect to server. Please check if the server is running.');
+        } else {
+          setError('Login failed. Please try again.');
+        }
       } else {
         setError('Login failed. Please try again.');
       }

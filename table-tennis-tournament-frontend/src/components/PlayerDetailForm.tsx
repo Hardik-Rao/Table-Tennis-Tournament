@@ -1,5 +1,4 @@
-// src/components/PlayerDetailForm.jsx
-import React from "react";
+// src/components/PlayerDetailForm.tsx
 import {
   Card,
   CardContent,
@@ -12,7 +11,6 @@ import {
   Grid,
   Box,
   Avatar,
-  Divider,
   Paper
 } from "@mui/material";
 import {
@@ -20,12 +18,32 @@ import {
   School,
   Group,
   Person,
-  Phone,
-  Badge,
-  SportsHandball
 } from "@mui/icons-material";
 
-const PlayerDetailForm = ({ 
+interface PlayerData {
+  name?: string;
+  rollNumber?: string;
+  branch?: string;
+  year?: string;
+  phoneNumber?: string;
+  sport?: string;
+  playingStyle?: string;
+  gripStyle?: string;
+  rubberType?: string;
+  team?: string;
+  whatsappNumber?: string;
+}
+
+interface PlayerDetailFormProps {
+  playerNumber: number;
+  playerData: PlayerData;
+  onPlayerDataChange: (playerNumber: number, field: string, value: string) => void;
+  branches: string[];
+  years: string[];
+  sports?: string[];
+}
+
+const PlayerDetailForm: React.FC<PlayerDetailFormProps> = ({ 
   playerNumber, 
   playerData, 
   onPlayerDataChange, 
@@ -33,20 +51,26 @@ const PlayerDetailForm = ({
   years,
   sports = ["Badminton", "Tennis", "Table Tennis", "Basketball", "Football", "Cricket", "Volleyball"]
 }) => {
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string): void => {
     onPlayerDataChange(playerNumber, field, value);
   };
 
-  const getPlayerInitials = (name) => {
+  const getPlayerInitials = (name: string | undefined): string => {
     if (!name) return `P${playerNumber}`;
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
 
   const isComplete = playerData.name && playerData.rollNumber && playerData.branch &&
                      playerData.year && playerData.phoneNumber && playerData.sport &&
                      playerData.playingStyle && playerData.gripStyle && playerData.rubberType;
 
-  const SectionHeader = ({ icon: Icon, title, color = "primary" }) => (
+  interface SectionHeaderProps {
+    icon: React.ComponentType<any>;
+    title: string;
+    color?: string;
+  }
+
+  const SectionHeader: React.FC<SectionHeaderProps> = ({ icon: Icon, title, color = "primary" }) => (
     <Paper 
       elevation={1}
       sx={{ 
@@ -212,7 +236,7 @@ const PlayerDetailForm = ({
                     '&:hover': { backgroundColor: '#f8f9fa' }
                   }}
                 >
-                  {branches.map((branch) => (
+                  {branches.map((branch: string) => (
                     <MenuItem key={branch} value={branch}>
                       {branch}
                     </MenuItem>
@@ -238,7 +262,7 @@ const PlayerDetailForm = ({
                     '&:hover': { backgroundColor: '#f8f9fa' }
                   }}
                 >
-                  {years.map((year) => (
+                  {years.map((year: string) => (
                     <MenuItem key={year} value={year}>
                       {year}
                     </MenuItem>
@@ -269,7 +293,7 @@ const PlayerDetailForm = ({
                     '&:hover': { backgroundColor: '#f8f9fa' }
                   }}
                 >
-                  {sports.map((sport) => (
+                  {sports.map((sport: string) => (
                     <MenuItem key={sport} value={sport}>
                       {sport}
                     </MenuItem>
@@ -402,7 +426,7 @@ const PlayerDetailForm = ({
           </Grid>
         </Grid>
 
-        {/* Completion Status */}
+       {/* Completion Status */} 
         <Paper
           elevation={3}
           sx={{

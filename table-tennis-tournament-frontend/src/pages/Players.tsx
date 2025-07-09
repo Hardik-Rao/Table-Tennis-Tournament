@@ -11,10 +11,30 @@ import {
 } from "@mui/material";
 import { People } from "@mui/icons-material";
 
+// Define interfaces for type safety
+interface ApiPlayer {
+  name: string;
+  team: string;
+  avatar?: string;
+  style: string;
+  grip: string;
+  rubber: string;
+}
+
+interface TransformedPlayer {
+  id: number;
+  name: string;
+  team: string;
+  avatar: string;
+  style: string;
+  grip: string;
+  rubber: string;
+}
+
 const Players: React.FC = () => {
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState<TransformedPlayer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -31,11 +51,11 @@ const Players: React.FC = () => {
           throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         
-        const data = await response.json();
+        const data: ApiPlayer[] = await response.json();
         console.log('Fetched players:', data); // For debugging
         
         // Transform API response to match PlayerCard props
-        const transformedPlayers = data.map((player, index) => ({
+        const transformedPlayers: TransformedPlayer[] = data.map((player: ApiPlayer, index: number) => ({
           id: index + 1, // Since your API doesn't return player_id
           name: player.name,
           team: player.team,
@@ -49,7 +69,12 @@ const Players: React.FC = () => {
         setError(null);
       } catch (err) {
         console.error('Error fetching players:', err);
-        setError(err.message || 'Failed to fetch players');
+        // Handle error with proper type checking
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch players');
+        }
       } finally {
         setLoading(false);
       }
@@ -198,7 +223,7 @@ const Players: React.FC = () => {
           }}
         >
           <Grid container spacing={3}>
-            {players.map((player) => (
+            {players.map((player: TransformedPlayer) => (
               <Grid item xs={12} sm={6} lg={4} xl={3} key={player.id}>
                 <PlayerCard {...player} />
               </Grid>

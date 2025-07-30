@@ -13,6 +13,7 @@ import Scores from "./pages/LiveScores";
 import Leaderboard from "./pages/LeaderBoard";
 import AdminLoginModal from "./components/AdminLoginModal";
 import AdminDashboard from "./pages/AdminDashboard";
+import LiveScoreManager from "./components/LiveScoreManager";
 import ManualUpdateSchedule from "./pages/ManulUpdateSchedule";
 import { Box, Typography } from "@mui/material";
 
@@ -65,7 +66,7 @@ const AppContent: React.FC = () => {
         <Route path="/admin" element={<PrivateRoute />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="schedule" element={<ManualUpdateSchedule />} />
-          
+           <Route path="live-scores" element={<LiveScoreManager />} /> 
         </Route>
         
         <Route path="*" element={<Navigate to="/" />} />

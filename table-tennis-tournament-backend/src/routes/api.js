@@ -10,7 +10,7 @@ const {
   updateMatchStatus 
 } = require('../controllers/matchController');
 const authRoutes = require('./authRoutes');
-
+const leaderboardController = require('../controllers/leaderboardController');
 // Player routes
 router.get('/players', getAllPlayers);
 router.get('/players/team/:teamId', getTeamPlayers);
@@ -28,6 +28,7 @@ router.post('/matches', createMatch); // Create new match
 router.put('/matches/:matchId', updateMatch); // Update match
 router.delete('/matches/:matchId', deleteMatch); // Delete match
 router.patch('/matches/:matchId/status', updateMatchStatus); // Update match status/scores
+router.get('/leaderboard', leaderboardController.getLeaderboard);
 
 // Authentication routes
 router.use('/auth', authRoutes);

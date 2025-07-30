@@ -2,6 +2,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Team, Player, sequelize } = require('../models');
+const { sendOTPEmail, sendRegistrationConfirmation } = require('../services/emailService');
+
+// Store OTPs temporarily (in production, use Redis or database)
+const otpStore = new Map();
+
+// Generate 6-digit OTP
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
 // Generate JWT Token
 const generateToken = (teamId, captainEmail) => {
@@ -32,7 +41,144 @@ const verifyPassword = (password, salt, hashedPassword) => {
   return bcrypt.compareSync(password + salt, hashedPassword);
 };
 
-// Login Controller
+// NEW: Send OTP Controller
+exports.sendOTP = async (req, res) => {
+  try {
+    const { email, fullName } = req.body;
+
+    // Validation
+    if (!email || !fullName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and full name are required'
+      });
+    }
+
+    if (!email.includes('@iitjammu.ac.in')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please use your @iitjammu.ac.in email address'
+      });
+    }
+
+    // Check if email already exists
+    const existingTeam = await Team.findOne({ 
+      where: { captain_email: email } 
+    });
+    
+    if (existingTeam) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already registered as a team captain'
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    
+    // Store OTP with expiration (10 minutes)
+    otpStore.set(email, {
+      otp,
+      fullName,
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+      attempts: 0
+    });
+
+    // Send OTP email
+    await sendOTPEmail(email, fullName, otp);
+
+    console.log(`OTP sent to ${email}: ${otp}`); // For development only
+
+    res.json({
+      success: true,
+      message: 'OTP sent successfully to your email'
+    });
+
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send OTP. Please try again.'
+    });
+  }
+};
+
+// NEW: Verify OTP Controller
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP are required'
+      });
+    }
+
+    // Get stored OTP
+    const storedData = otpStore.get(email);
+    
+    if (!storedData) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP not found or expired. Please request a new OTP.'
+      });
+    }
+
+    // Check expiration
+    if (Date.now() > storedData.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new OTP.'
+      });
+    }
+
+    // Check attempts (prevent brute force)
+    if (storedData.attempts >= 3) {
+      otpStore.delete(email);
+      return res.status(400).json({
+        success: false,
+        message: 'Too many failed attempts. Please request a new OTP.'
+      });
+    }
+
+    // Verify OTP
+    if (otp !== storedData.otp) {
+      // Increment attempts
+      otpStore.set(email, {
+        ...storedData,
+        attempts: storedData.attempts + 1
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: `Invalid OTP. ${2 - storedData.attempts} attempts remaining.`
+      });
+    }
+
+    // OTP verified successfully
+    otpStore.set(email, {
+      ...storedData,
+      verified: true,
+      verifiedAt: Date.now()
+    });
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully'
+    });
+
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify OTP. Please try again.'
+    });
+  }
+};
+
+// Login Controller (unchanged)
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -64,14 +210,6 @@ exports.login = async (req, res) => {
         message: 'Invalid email or password'
       });
     }
-
-    // Check if email is verified
-    // if (!team.email_verified) {
-    //   return res.status(401).json({
-    //     success: false,
-    //     message: 'Please verify your email address before logging in'
-    //   });
-    // }
 
     // Verify password
     const isValidPassword = verifyPassword(password, team.salt, team.password_hash);
@@ -136,7 +274,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// Enhanced Register Controller with full team and players registration
+// UPDATED: Enhanced Register Controller with OTP verification
 exports.register = async (req, res) => {
   // Start database transaction
   const transaction = await sequelize.transaction();
@@ -156,6 +294,26 @@ exports.register = async (req, res) => {
       // Players Information (array of player objects)
       players
     } = req.body;
+
+    // NEW: Check if email was verified via OTP
+    const storedData = otpStore.get(captain_email);
+    if (!storedData || !storedData.verified) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Email not verified. Please verify your email first.'
+      });
+    }
+
+    // NEW: Check if verification is still valid (within 30 minutes)
+    if (Date.now() - storedData.verifiedAt > 30 * 60 * 1000) {
+      otpStore.delete(captain_email);
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Email verification expired. Please verify again.'
+      });
+    }
 
     // Validation for required team fields
     if (!team_name || !captain_email || !captain_name || !captain_roll_number || 
@@ -281,7 +439,7 @@ exports.register = async (req, res) => {
       primary_sport: primary_sport || 'Table Tennis',
       password_hash,
       salt,
-      email_verified: false // Will need email verification
+      email_verified: true // UPDATED: Set to true since OTP was verified
     }, { transaction });
 
     // Create players
@@ -305,9 +463,22 @@ exports.register = async (req, res) => {
     // Commit transaction
     await transaction.commit();
 
+    // NEW: Clean up OTP store after successful registration
+    otpStore.delete(captain_email);
+
+    // NEW: Send registration confirmation email
+    try {
+      await sendRegistrationConfirmation(captain_email, captain_name, { 
+        teamName: team_name 
+      });
+    } catch (emailError) {
+      console.error('Confirmation email failed:', emailError);
+      // Don't fail registration if email fails
+    }
+
     res.status(201).json({
       success: true,
-      message: 'Team and players registered successfully. Please verify your email.',
+      message: 'Team and players registered successfully!',
       data: {
         team_id: newTeam.team_id,
         team_name: newTeam.team_name,
@@ -343,7 +514,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// Verify Token Middleware
+// Verify Token Middleware (unchanged)
 exports.verifyToken = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -378,7 +549,7 @@ exports.verifyToken = async (req, res, next) => {
   }
 };
 
-// Get current team info
+// Get current team info (unchanged)
 exports.getProfile = async (req, res) => {
   try {
     const team = req.team;

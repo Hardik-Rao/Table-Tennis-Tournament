@@ -38,6 +38,7 @@ import {
   Logout as LogoutIcon
 } from '@mui/icons-material';
 
+
 interface Player {
   id: number;
   name: string;
@@ -54,6 +55,7 @@ interface Player {
   rubber?: string;
 }
 
+
 interface Captain {
   name: string;
   email: string;
@@ -63,6 +65,7 @@ interface Captain {
   year: string;
   phone: string;
 }
+
 
 interface Team {
   id: number;
@@ -75,6 +78,7 @@ interface Team {
   playerCount: number;
 }
 
+
 interface ApiResponse {
   success: boolean;
   data: {
@@ -84,6 +88,7 @@ interface ApiResponse {
     totalMatches: number;
   };
 }
+
 
 const AdminDashboard: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -95,6 +100,7 @@ const AdminDashboard: React.FC = () => {
     totalPlayers: 0,
     totalMatches: 0
   });
+
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -129,26 +135,37 @@ const AdminDashboard: React.FC = () => {
       }
     };
 
+
     fetchTeams();
   }, []);
+
 
   const handleExpandTeam = (teamId: number) => {
     setExpandedTeam(expandedTeam === teamId ? null : teamId);
   };
+
 
   const handleUpdateSchedule = () => {
     // Navigate to schedule update page
     window.location.href = '/admin/schedule';
   };
 
+  // Add this new function for live scores
+  const handleLiveScores = () => {
+    window.location.href = '/admin/live-scores';
+  };
+
+
   const handleLogout = () => {
     localStorage.removeItem('adminSession');
     window.location.href = '/';
   };
 
+
   const handleRefresh = () => {
     window.location.reload();
   };
+
 
   if (loading) {
     return (
@@ -166,6 +183,7 @@ const AdminDashboard: React.FC = () => {
       </Box>
     );
   }
+
 
   if (error) {
     return (
@@ -188,6 +206,7 @@ const AdminDashboard: React.FC = () => {
       </Box>
     );
   }
+
 
   return (
     <Box sx={{
@@ -224,7 +243,8 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </Box>
 
-            <Box display="flex" gap={2}>
+
+            <Box display="flex" gap={2} flexWrap="wrap">
               <Button
                 variant="outlined"
                 onClick={handleRefresh}
@@ -249,6 +269,24 @@ const AdminDashboard: React.FC = () => {
               >
                 Update Schedule
               </Button>
+
+              {/* Add Live Scores Button */}
+              <Button
+                variant="contained"
+                startIcon={<SportsTennis />}
+                onClick={handleLiveScores}
+                sx={{
+                  borderRadius: 3,
+                  px: 3,
+                  py: 1.5,
+                  background: 'linear-gradient(45deg, #ff9800, #ffb74d)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #f57c00, #ff9800)',
+                  }
+                }}
+              >
+                Manage Live Scores
+              </Button>
               
               <Button
                 variant="contained"
@@ -270,6 +308,7 @@ const AdminDashboard: React.FC = () => {
           </Box>
         </Paper>
 
+
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={4}>
@@ -290,6 +329,7 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </Grid>
 
+
           <Grid item xs={12} sm={4}>
             <Card sx={{
               background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
@@ -307,6 +347,7 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
+
 
           <Grid item xs={12} sm={4}>
             <Card sx={{
@@ -327,6 +368,7 @@ const AdminDashboard: React.FC = () => {
           </Grid>
         </Grid>
 
+
         {/* Teams Section */}
         <Paper
           elevation={3}
@@ -343,6 +385,7 @@ const AdminDashboard: React.FC = () => {
             <Groups color="primary" />
             Teams Overview
           </Typography>
+
 
           {teams.length === 0 ? (
             <Box display="flex" justifyContent="center" py={8}>
@@ -376,6 +419,7 @@ const AdminDashboard: React.FC = () => {
                           </Box>
                         </Box>
 
+
                         <Box display="flex" alignItems="center" gap={2}>
                           <Box textAlign="right">
                             <Typography variant="body2" color="text.secondary">
@@ -394,6 +438,7 @@ const AdminDashboard: React.FC = () => {
                           </IconButton>
                         </Box>
                       </Box>
+
 
                       {/* Captain Info */}
                       <Alert 
@@ -417,6 +462,7 @@ const AdminDashboard: React.FC = () => {
                           </Box>
                         </Box>
                       </Alert>
+
 
                       {/* Expandable Players List */}
                       <Collapse in={expandedTeam === team.id}>
@@ -506,5 +552,6 @@ const AdminDashboard: React.FC = () => {
     </Box>
   );
 };
+
 
 export default AdminDashboard;

@@ -1,4 +1,4 @@
-// src/pages/Registration.tsx - TypeScript Fixed Version
+// src/pages/Registration.tsx - Backend Integrated Version
 import { useState } from "react";
 import { 
   TextField, 
@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import PlayerDetailForm from "../components/PlayerDetailForm";
 
-// Define interfaces
+// Keep your existing interfaces
 interface FormData {
   email: string;
   fullName: string;
@@ -36,7 +36,7 @@ interface FormData {
   primarySport: string;
   password: string;
   confirmPassword: string;
-  [key: string]: string; // Index signature for dynamic access
+  [key: string]: string;
 }
 
 interface PlayerData {
@@ -49,7 +49,7 @@ interface PlayerData {
   playingStyle?: string;
   gripStyle?: string;
   rubberType?: string;
-  [key: string]: string | undefined; // Index signature for dynamic access
+  [key: string]: string | undefined;
 }
 
 interface PlayersData {
@@ -105,7 +105,6 @@ const Registration = () => {
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
-  const [generatedOTP, setGeneratedOTP] = useState("");
   
   // Player data for 3 players
   const [playersData, setPlayersData] = useState<PlayersData>({
@@ -153,12 +152,7 @@ const Registration = () => {
     }));
   };
 
-  // Generate 6-digit OTP
-  const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
-  // FRONTEND-ONLY VERSION - Simulate sending OTP
+  // BACKEND-INTEGRATED VERSION - Send OTP via Email
   const sendOtp = async () => {
     // Validation
     if (!formData.email.endsWith("@iitjammu.ac.in")) {
@@ -175,39 +169,78 @@ const Registration = () => {
     setOtpError("");
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate OTP (in real app, this would be sent via email)
-      const newOTP = generateOTP();
-      setGeneratedOTP(newOTP);
-      
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          fullName: formData.fullName
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send OTP');
+      }
+
       setOtpSent(true);
+      setOtpError("");
       
-      // Show the OTP in console for testing (remove in production)
-      console.log("🔐 Generated OTP for testing:", newOTP);
+      alert(`📧 OTP sent successfully to ${formData.email}!\n\nPlease check your email inbox (and spam folder) for the 6-digit verification code.`);
       
-      alert(`📧 OTP Generation Successful!\n\n🔐 Your OTP: ${newOTP}\n\n(In production, this would be sent to ${formData.email})\n\nFor testing: Check the browser console for the OTP.`);
     } catch (error) {
-      console.error("Error generating OTP:", error);
-      setOtpError("Failed to generate OTP. Please try again.");
+      console.error("Error sending OTP:", error);
+      setOtpError(error instanceof Error ? error.message : "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // BACKEND-INTEGRATED VERSION - Verify OTP
   const verifyOtp = async () => {
     if (!otp.trim()) {
       setOtpError("Please enter the OTP");
       return;
     }
 
-    if (otp === generatedOTP) {
+    if (otp.length !== 6) {
+      setOtpError("OTP must be 6 digits");
+      return;
+    }
+
+    setLoading(true);
+    setOtpError("");
+
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: otp
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'OTP verification failed');
+      }
+
       setVerified(true);
       setOtpError("");
       alert("✅ Email verified successfully! Please complete your team captain registration.");
-    } else {
-      setOtpError("❌ Invalid OTP. Please check the console or alert message for the correct OTP.");
+      
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      setOtpError(error instanceof Error ? error.message : "OTP verification failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -243,7 +276,6 @@ const Registration = () => {
   };
 
   const validatePlayersData = () => {
-    // Updated to include ALL required fields from PlayerDetailForm
     const requiredPlayerFields = [
       'name', 
       'rollNumber', 
@@ -278,7 +310,7 @@ const Registration = () => {
     const captainCompleted = captainRequiredFields.filter(field => formData[field] && formData[field].trim()).length;
     completed += (captainCompleted / captainRequiredFields.length) * 25;
     
-    // Players completion - Updated to include all required fields
+    // Players completion
     const playerRequiredFields = [
       'name', 
       'rollNumber', 
@@ -304,7 +336,7 @@ const Registration = () => {
     return Math.round(completed);
   };
 
-  // FRONTEND-ONLY VERSION - Simulate registration submission
+  // BACKEND-INTEGRATED VERSION - Submit registration
   const submitRegistration = async () => {
     if (!validateCaptainDetails() || !validatePlayersData()) {
       return;
@@ -327,7 +359,7 @@ const Registration = () => {
     // Transform players data to match API structure
     for (let i = 1; i <= 3; i++) {
       const player = playersData[i as keyof PlayersData];
-      if (player.name) { // Only add if player data exists
+      if (player.name) {
         registrationData.players.push({
           player_name: player.name,
           roll_number: player.rollNumber!,
@@ -345,7 +377,6 @@ const Registration = () => {
     try {
       setLoading(true);
       
-      // Make the POST request to your API
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -354,37 +385,13 @@ const Registration = () => {
         body: JSON.stringify(registrationData)
       });
 
-      // Log response details for debugging
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-      
-      // Get response text first to see what we're dealing with
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
+      const data = await response.json();
 
       if (!response.ok) {
-        // Try to parse error as JSON, fallback to text
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
-        } catch (jsonError) {
-          errorMessage = `HTTP ${response.status}: ${responseText || 'Unknown error'}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Try to parse success response as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log("Registration successful:", result);
-      } catch (jsonError) {
-        console.log("Response is not JSON, treating as text:", responseText);
-        result = { message: responseText };
+        throw new Error(data.message || 'Registration failed');
       }
       
-      alert("🎉 Team registration completed successfully!");
+      alert("🎉 Team registration completed successfully!\n\nA confirmation email has been sent to your registered email address.");
       
       // Reset all forms
       setFormData({
@@ -406,11 +413,10 @@ const Registration = () => {
       setOtpSent(false);
       setOtp("");
       setVerified(false);
-      setGeneratedOTP("");
       
     } catch (error) {
       console.error("Registration error:", error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       alert(`Registration failed: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -455,17 +461,14 @@ const Registration = () => {
             <Typography variant="h6" className="opacity-90">
               Register your team for the upcoming tournament!
             </Typography>
-            <Typography variant="body2" className="mt-2 opacity-75">
-              🚧 Frontend Demo Mode - No Backend Required 🚧
-            </Typography>
           </div>
 
           <div className="p-8">
-            {/* Demo Notice */}
-            <Alert severity="info" className="mb-6">
+            {/* Updated Notice */}
+            <Alert severity="success" className="mb-6">
               <Typography variant="body2">
-                <strong>🔧 Demo Mode:</strong> This is a frontend-only version for testing. 
-                OTP will be shown in alerts/console, and registration data will be logged to console.
+                <strong>✅ Backend Integration Active:</strong> OTP will be sent to your email address. 
+                Please check your inbox and spam folder for the verification code.
               </Typography>
             </Alert>
 
@@ -551,7 +554,7 @@ const Registration = () => {
                     className="bg-blue-600 hover:bg-blue-700"
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                   >
-                    {loading ? "Generating OTP..." : "Generate OTP (Demo Mode)"}
+                    {loading ? "Sending OTP..." : "Send OTP to Email"}
                   </Button>
                 ) : (
                   <div className="space-y-4">
@@ -561,17 +564,20 @@ const Registration = () => {
                         value={otp}
                         onChange={(e) => setOtp(e.target.value)}
                         placeholder="Enter 6-digit OTP"
-                        helperText="Check the alert message or console for OTP"
+                        helperText="Check your email for the verification code"
                         className="flex-1"
                         inputProps={{ maxLength: 6 }}
+                        disabled={loading}
                       />
                       <Button 
                         variant="contained" 
                         size="large"
                         onClick={verifyOtp}
+                        disabled={loading}
                         className="bg-green-600 hover:bg-green-700"
+                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                       >
-                        Verify OTP
+                        {loading ? "Verifying..." : "Verify OTP"}
                       </Button>
                     </div>
                     
@@ -585,7 +591,7 @@ const Registration = () => {
                         disabled={loading}
                         className="text-blue-600"
                       >
-                        {loading ? "Generating..." : "Generate New OTP"}
+                        {loading ? "Sending..." : "Resend OTP"}
                       </Button>
                     </div>
                   </div>
@@ -778,7 +784,7 @@ const Registration = () => {
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-12 py-3 text-lg font-semibold"
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                   >
-                    {loading ? "Saving Registration..." : "Complete Team Registration (Demo)"}
+                    {loading ? "Registering Team..." : "Complete Team Registration"}
                   </Button>
                   
                   {getCompletionPercentage() < 100 && (

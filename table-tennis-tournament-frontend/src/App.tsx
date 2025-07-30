@@ -65,6 +65,7 @@ const AppContent: React.FC = () => {
         <Route path="/admin" element={<PrivateRoute />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="schedule" element={<ManualUpdateSchedule />} />
+          
         </Route>
         
         <Route path="*" element={<Navigate to="/" />} />

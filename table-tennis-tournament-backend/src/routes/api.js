@@ -20,6 +20,9 @@ router.get('/teams', getAllTeams); // Get all teams with players for admin dashb
 router.get('/teams/:teamId', getTeamById); // Get specific team by ID
 
 // Match routes
+// Add these new routes to your existing match routes section
+
+
 router.get('/matches', getAllMatches); // Get all matches
 router.post('/matches', createMatch); // Create new match
 router.put('/matches/:matchId', updateMatch); // Update match

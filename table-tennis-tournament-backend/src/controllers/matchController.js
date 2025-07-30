@@ -204,6 +204,8 @@ exports.updateMatch = async (req, res) => {
     });
   }
 };
+// Get only ongoing matches for live scores
+
 
 // Delete match
 exports.deleteMatch = async (req, res) => {

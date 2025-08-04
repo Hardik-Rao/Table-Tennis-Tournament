@@ -30,6 +30,7 @@ module.exports = (sequelize) => {
     avatar_url: DataTypes.TEXT
   }, {
     tableName: 'players',
+    schema: 'public',
     timestamps: false
   });
 

@@ -58,6 +58,7 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'teams',
+     schema: 'public', 
     timestamps: false
   });
 

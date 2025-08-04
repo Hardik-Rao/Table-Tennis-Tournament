@@ -1,27 +1,19 @@
 require('dotenv').config();
-const { sequelize } = require('./src/models');
+const { connectDB } = require('./src/config/db'); // Adjust the path if needed
 const app = require('./src/app');
 const http = require('http');
-const { init } = require('./src/socket'); // import init from socket.js
+const { init } = require('./src/socket');
 
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
-// Initialize Socket.IO once here
 const io = init(server);
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  // Optionally, send current scores on new connection using your currentLiveScores array or retrieve from database
-
-  // Listen for admin score updates
   socket.on('adminUpdateScore', (updatedMatch) => {
-    // Update your live score data here, for example:
-    // currentLiveScores logic can be moved here or managed globally if needed
-
-    // Broadcast updated live scores to all clients
     io.emit('liveScoresUpdate', updatedMatch);
   });
 
@@ -29,14 +21,17 @@ io.on('connection', (socket) => {
     console.log('Client disconnected:', socket.id);
   });
 });
-
-sequelize.authenticate()
+console.log('Starting DB connection attempt...');
+// Ensure DB connection before starting server
+connectDB()
   .then(() => {
     console.log('✅ PostgreSQL database connected.');
     server.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('❌ Unable to connect to the database:', error);
+    process.exit(1);
   });
+console.log('DATABASE_URL:', process.env.DATABASE_URL);

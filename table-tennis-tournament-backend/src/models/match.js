@@ -49,6 +49,7 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'matches',
+     schema: 'public', 
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'

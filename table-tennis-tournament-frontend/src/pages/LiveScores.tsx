@@ -24,7 +24,8 @@ const Scores: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io("http://localhost:5000"); // Use your backend URL
+  const newSocket = io(import.meta.env.VITE_API_URL);
+
     setSocket(newSocket);
 
     newSocket.on("liveScoresUpdate", (updatedScore: LiveScore | LiveScore[]) => {
@@ -46,7 +47,8 @@ const Scores: React.FC = () => {
     });
 
     // Optionally, fetch initial live ongoing matches from your REST API
-    fetch("http://localhost:5000/api/matches")
+    fetch(`${import.meta.env.VITE_API_URL}api/matches`)
+
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

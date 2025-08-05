@@ -99,13 +99,14 @@ const Dashboard = () => {
         
         console.log("Fetching team data with token:", token.substring(0, 20) + "...");
 
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await fetch(`${import.meta.env.VITE_API_URL}api/auth/profile`, {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
+
 
         if (!response.ok) {
           if (response.status === 401) {

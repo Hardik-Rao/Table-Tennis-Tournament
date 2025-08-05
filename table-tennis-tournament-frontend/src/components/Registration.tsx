@@ -1,5 +1,7 @@
 // src/pages/Registration.tsx - Backend Integrated Version
 import { useState } from "react";
+
+
 import { 
   TextField, 
   Button, 
@@ -20,6 +22,7 @@ import {
   CircularProgress
 } from "@mui/material";
 import PlayerDetailForm from "../components/PlayerDetailForm";
+const baseUrl = import.meta.env.VITE_API_URL;
 
 // Keep your existing interfaces
 interface FormData {
@@ -169,7 +172,7 @@ const Registration = () => {
     setOtpError("");
 
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch(`${baseUrl}api/auth/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,16 +218,17 @@ const Registration = () => {
     setOtpError("");
 
     try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          otp: otp
-        })
-      });
+const response = await fetch(`${import.meta.env.VITE_API_URL}api/auth/verify-otp`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: formData.email,
+    otp: otp
+  })
+});
+
 
       const data = await response.json();
 
@@ -377,13 +381,13 @@ const Registration = () => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData)
-      });
+    const response = await fetch(`${import.meta.env.VITE_API_URL}api/auth/register`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(registrationData)
+});
 
       const data = await response.json();
 

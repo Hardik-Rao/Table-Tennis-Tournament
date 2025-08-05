@@ -51,7 +51,8 @@ const LiveScoreManager: React.FC = () => {
     const fetchMatches = async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/api/matches");
+       const res = await fetch(`${import.meta.env.VITE_API_URL}api/matches`);
+
         const data = await res.json();
         if (data.success) {
           // Optionally filter to only ongoing matches here or show all with editing
@@ -70,7 +71,8 @@ const LiveScoreManager: React.FC = () => {
 
   // Connect to socket.io
   useEffect(() => {
-    const newSocket = io("http://localhost:5000"); // your backend URL
+    const newSocket = io(import.meta.env.VITE_API_URL);
+
     setSocket(newSocket);
 
     // Listen for live score updates and update the local state for those matches
@@ -119,18 +121,19 @@ const LiveScoreManager: React.FC = () => {
     setUpdatingMatchId(match.id);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:5000/api/matches/${match.id}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: match.status,
-          team1_score: match.team1_score,
-          team2_score: match.team2_score,
-          winner_team: match.winner_team,
-        }),
-      });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}api/matches/${match.id}/status`, {
+  method: "PATCH",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    status: match.status,
+    team1_score: match.team1_score,
+    team2_score: match.team2_score,
+    winner_team: match.winner_team,
+  }),
+});
+
       const data = await res.json();
       if (data.success) {
         setSnackbarMsg("Match updated successfully");

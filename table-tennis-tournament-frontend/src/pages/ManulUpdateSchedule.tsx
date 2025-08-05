@@ -102,7 +102,8 @@ const ManualUpdateSchedule: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:5000/api/matches');
+     const response = await fetch(`${import.meta.env.VITE_API_URL}api/matches`);
+
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -194,9 +195,11 @@ const ManualUpdateSchedule: React.FC = () => {
         return;
       }
 
-      const url = editingMatch 
-        ? `http://localhost:5000/api/matches/${editingMatch.id}`
-        : 'http://localhost:5000/api/matches';
+      const baseUrl = import.meta.env.VITE_API_URL;
+
+const url = editingMatch
+  ? `${baseUrl}api/matches/${editingMatch.id}`
+  : `${baseUrl}api/matches`;
       
       const method = editingMatch ? 'PUT' : 'POST';
 
@@ -233,9 +236,10 @@ const ManualUpdateSchedule: React.FC = () => {
   const handleDeleteMatch = async (matchId: number) => {
     if (window.confirm('Are you sure you want to delete this match?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/matches/${matchId}`, {
-          method: 'DELETE'
-        });
+       const response = await fetch(`${import.meta.env.VITE_API_URL}api/matches/${matchId}`, {
+  method: 'DELETE'
+});
+
 
         const data = await response.json();
 

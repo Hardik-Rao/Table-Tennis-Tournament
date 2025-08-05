@@ -71,10 +71,11 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post<LoginResponse>('http://localhost:5000/api/auth/login', {
-        email: formData.email,
-        password: formData.password
-      });
+    const response = await axios.post<LoginResponse>(`${import.meta.env.VITE_API_URL}api/auth/login`, {
+  email: formData.email,
+  password: formData.password
+});
+
 
       if (response.data.success) {
         // Store the JWT token with the key expected by Dashboard

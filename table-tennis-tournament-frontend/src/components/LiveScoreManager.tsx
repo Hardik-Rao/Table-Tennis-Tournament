@@ -15,12 +15,12 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
+
   CircularProgress,
   Alert,
   Snackbar,
 } from "@mui/material";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 
 interface Match {
   id: number;
@@ -42,7 +42,7 @@ const LiveScoreManager: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  
   const [updatingMatchId, setUpdatingMatchId] = useState<number | null>(null);
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
 
@@ -73,8 +73,7 @@ const LiveScoreManager: React.FC = () => {
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_API_URL);
 
-    setSocket(newSocket);
-
+  
     // Listen for live score updates and update the local state for those matches
     newSocket.on("liveScoresUpdate", (updatedMatch: Match | Match[]) => {
       if (Array.isArray(updatedMatch)) {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { io} from "socket.io-client";
 
 interface LiveScore {
   id: number;
@@ -21,12 +21,12 @@ interface LiveScore {
 
 const Scores: React.FC = () => {
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
+
 
   useEffect(() => {
   const newSocket = io(import.meta.env.VITE_API_URL);
 
-    setSocket(newSocket);
+  
 
     newSocket.on("liveScoresUpdate", (updatedScore: LiveScore | LiveScore[]) => {
       // Sometimes backend broadcasts a single match update or array of matches
